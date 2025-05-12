@@ -1,11 +1,15 @@
 from rest_framework import  status
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from API.serializers import CameraSerializer, FireDetectionEventSerializer
+from rest_framework.permissions import IsAuthenticated
+from API.models import Camera, FireDectionEvent
+from django.shortcuts import get_object_or_404
 
 
 class HelloWorld(APIView):
     def get(self, request):
-        return Response({"message": "Hello, World!"}, status=status.HTTP_404_NOT_FOUND)
+        return Response({"message": "Hello, World!"}, status=status.HTTP_200_OK)
     
     def post(self, request):
         return Response({"message": "Hello, World! using POST Request"}, status=status.HTTP_200_OK)
@@ -18,34 +22,73 @@ class HelloWorld(APIView):
 
 # List all registered Cameras and Register a New Cameras
 class CameraList(APIView):
+    permission_classes = [IsAuthenticated]
     def get(self, request):
-        # Logic to retrieve and return the list of cameras
-        return Response({"message": "List of cameras"}, status=status.HTTP_200_OK)
+        cameras = Camera.objects.all()
+        serializer = CameraSerializer(cameras, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
     
     def post(self, request):
-        # Logic to register a new camera
-        return Response({"message": "Camera registered"}, status=status.HTTP_201_CREATED)
+        serializer = CameraSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        
     
 # Get Camera Details, Start Monitoring Camera, Stop  Monitoring Camera
 class CameraDetail(APIView):
+    permission_classes = [IsAuthenticated]
     def get(self, request, id):
-        # Logic to retrieve and return camera details
-        return Response({"message": f"Camera details for {id}"}, status=status.HTTP_200_OK)
+        camera = get_object_or_404(Camera, id=id)
+        serializer = CameraSerializer(camera)
+        return Response(serializer.data, status=status.HTTP_200_OK)
     
-    def post(self, request, id):
-        # Logic to start the camera
-        return Response({"message": f"Camera {id} started"}, status=status.HTTP_200_OK)
+    def put(self, request, id):
+        camera = get_object_or_404(Camera, id=id)
+        serializer = CameraSerializer(camera, data=request.data, partial=True)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_200_OK)
     
     def delete(self, request, id):
-        # Logic to stop the camera
-        return Response({"message": f"Camera {id} stopped"}, status=status.HTTP_200_OK)
+        camera = get_object_or_404(Camera, id=id)
+        camera.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+# Start Detection
+class StartDetection(APIView):
+    permission_classes = [IsAuthenticated]
+    def post(self, request, id):
+        # Simulate or trigger YOLO detection here
+        return Response({f"message": f"Detection started for camera {id}"}, status=status.HTTP_200_OK)
+# Stop Detection
+class StopDetection(APIView):
+    permission_classes = [IsAuthenticated]
+    def post(self, request, id):
+        # Simulate or trigger YOLO detection stop here
+        camera = get_object_or_404(Camera, id=id)
+        return Response({"message": f"Detection stopped for camera {camera.name}(IP: {camera.camera_ip})"}, status=status.HTTP_200_OK)
     
 # List all Events and Get Event Details
 class EventList(APIView):
     def get(self, request):
-        # Logic to retrieve and return the list of events
-        return Response({"message": "List of events"}, status=status.HTTP_200_OK)
-    
+        events = FireDectionEvent.objects.all()
+        serializer = FireDetectionEventSerializer(events, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+# Get Event Details
+class EventDetail(APIView):
     def get(self, request, id):
-        # Logic to retrieve and return event details
-        return Response({"message": f"Event details for {id}"}, status=status.HTTP_200_OK)
+        event = get_object_or_404(FireDectionEvent, id=id)
+        serializer = FireDetectionEventSerializer(event)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    def put(self, request, id):
+        event = get_object_or_404(FireDectionEvent, id=id)
+        serializer = FireDetectionEventSerializer(event, data=request.data, partial=True)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_200_OK)
