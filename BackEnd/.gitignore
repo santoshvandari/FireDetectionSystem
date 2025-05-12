@@ -1,0 +1,6 @@
+# /venv
+# API/__pycache__
+# API/migrations/__pycache__
+# core/__pycache__
+# core/migrations/__pycache__
+# /db.sqlite3
