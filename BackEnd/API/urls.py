@@ -8,8 +8,8 @@ urlpatterns = [
     path("token/refresh/",TokenRefreshView.as_view(), name="token_refresh"),
     path("cameras/",views.CameraList.as_view(), name="camera_list"),
     path("cameras/<int:id>/",views.CameraDetail.as_view(), name="camera_detail"),
-    path("cameras/<id>/start/",views.CameraStart.as_view(), name="camera_start"),
-    path("cameras/<id>/stop/",views.CameraStop.as_view(), name="camera_stop"),
+    path("cameras/<id>/start/",views.CameraDetail.as_view(), name="camera_start"),
+    path("cameras/<id>/stop/",views.CameraDetail.as_view(), name="camera_stop"),
     path("events/",views.EventList.as_view(), name="event_list"),
     path("events/<int:id>/",views.EventList.as_view(), name="event_detail"),
     

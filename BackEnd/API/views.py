@@ -1,10 +1,5 @@
-from django.contrib.auth.models import Group, User
-from rest_framework import permissions, viewsets, status
+from rest_framework import  status
 from rest_framework.response import Response
-from rest_framework.authentication import TokenAuthentication
-from django.contrib.auth import authenticate
-from rest_framework.authtoken.models import Token
-from API.serializers import GroupSerializer, UserSerializer
 from rest_framework.views import APIView
 
 
