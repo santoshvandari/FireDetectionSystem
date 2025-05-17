@@ -26,5 +26,6 @@ const CameraAPI = {
         return Base.delete(endpoint);
     }
 };
+export default CameraAPI;
 
 

@@ -9,9 +9,11 @@ import {
     FaBell,
     FaSignOutAlt
 } from 'react-icons/fa';
+import { useState } from "react";
 
 const Sidebar = () => {
     const location = useLocation();
+    const [alertsCount, setAlertsCount] = useState(1);
 
     // Function to check if link is active
     const isActive = (path) => {
@@ -71,9 +73,11 @@ const Sidebar = () => {
                     >
                         <FaBell className="mr-3 w-5 h-5" />
                         Alerts
-                        <span className="ml-auto bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">
-                            2
+                        {alertsCount > 0 && (
+                            <span className="ml-auto bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">
+                            {alertsCount}
                         </span>
+                        )}
                     </Link>
                     
                     <Link 
@@ -90,7 +94,7 @@ const Sidebar = () => {
                 </div>
                 
                 {/* Settings Section */}
-                <div className="mt-8 mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                {/* <div className="mt-8 mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
                     Settings
                 </div>
                 
@@ -118,7 +122,7 @@ const Sidebar = () => {
                         <FaCog className="mr-3 w-5 h-5" />
                         System Settings
                     </Link>
-                </div>
+                </div> */}
             </nav>
             
             {/* Logout Button */}
