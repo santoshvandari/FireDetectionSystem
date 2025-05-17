@@ -1,9 +1,12 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import Login  from "./pages/Login";
-import Dashboard from "./pages/Dashboard";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Logout from "./components/Logout";
+import Dashboard from "./pages/Dashboard";
+import Cameras from "./components/Cameras";
+import Alerts from "./components/Alerts";
+import DetectionHistory from "./components/DetectionHistory";
 
 function App(){
   return (
@@ -23,7 +26,7 @@ function App(){
           path="/cameras"
           element={
             <ProtectedRoute>
-              <Dashboard />
+              <Cameras />
             </ProtectedRoute>
           }
           />
@@ -39,9 +42,17 @@ function App(){
             path="/alerts"
             element={
               <ProtectedRoute>
-                <Dashboard />
+                <Alerts />
               </ProtectedRoute>
             }
+            />
+            <Route
+              path="/history"
+              element={
+                <ProtectedRoute>
+                  <DetectionHistory />
+                </ProtectedRoute>
+              }
             />
         <Route path="/logout" element={<Logout />} />
       </Routes>
