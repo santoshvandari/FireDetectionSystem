@@ -86,7 +86,7 @@ const apiRequest = async (endpoint, options = {}) => {
     }
 };
 
-const API = {
+const Base = {
     /**
      * Send a GET request
      * @param {string} endpoint - API endpoint
@@ -144,16 +144,6 @@ const API = {
     },
 };
 
-// Authentication method
-API.login = (username, password) => {
-    const endpoint = '/auth/token/';
-    const payload = {
-        username,
-        password
-    };
 
-    console.log("API login payload", payload);
-    return API.post(endpoint, payload, false);
-};
 
-export default API;
+export default Base;

@@ -19,6 +19,30 @@ function App(){
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/cameras"
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          }
+          />
+          <Route
+            path="/cameras/:cameraId"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+            />
+            <Route
+            path="/alerts"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+            />
         <Route path="/logout" element={<Logout />} />
       </Routes>
     </Router>
