@@ -18,7 +18,7 @@ const SAMPLE_CAMERAS = [
 ];
 
 export default function Cameras() {
-    const [username, setUsername] = useState('Santosh');
+    const [username, setUsername] = useState('Admin');
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const navigate = useNavigate();
 
