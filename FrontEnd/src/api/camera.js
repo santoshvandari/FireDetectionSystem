@@ -6,11 +6,6 @@ const CameraAPI = {
         return Base.get(endpoint);
     },
 
-    getCamera: (cameraId) => {
-        const endpoint = `/cameras/${cameraId}/`;
-        return Base.get(endpoint);
-    },
-
     createCamera: (cameraData) => {
         const endpoint = '/cameras/';
         return Base.post(endpoint, cameraData);
