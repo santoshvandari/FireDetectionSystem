@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import API from '../services/api';
+// import API from '../services/api';
+import AuthAPI from '../api/auth';
 import { useNavigate } from 'react-router-dom';
 import { FaEye, FaEyeSlash, FaLock, FaUser, FaFire } from 'react-icons/fa';
 
@@ -35,7 +36,7 @@ const LoginForm = () => {
 
         setIsLoading(true);
         try {
-            const res = await API.login(username, password);
+            const res = await AuthAPI.login(username, password);
             console.log('Login success:', res);
 
             const token = res?.data?.access || res?.data?.token;
