@@ -1,7 +1,7 @@
 import json
 from channels.generic.websocket import AsyncWebsocketConsumer
 
-class AlertConsumer(AsyncWebsocketConsumer):
+class FireAlertConsumer(AsyncWebsocketConsumer):
     # Connect to the WebSocket
     async def connect(self):
         # Join the alert group
