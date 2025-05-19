@@ -38,8 +38,11 @@ class FireAlertConsumer(AsyncWebsocketConsumer):
     # Send message to WebSocket
     async def alert_message(self, event):
         # Send the message to WebSocket
+        camera_id = event['camera_id']
         message = event['message']
         await self.send(text_data=json.dumps({
+            'camera_id': camera_id,
+            'type': 'alert_message',
             'message': message
         }))
     

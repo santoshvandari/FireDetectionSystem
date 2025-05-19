@@ -7,15 +7,16 @@ import {
 import { useNavigate } from 'react-router-dom';
 import Header from './Header';
 import Sidebar from './Sidebar';
+import CameraAPI from '../api/camera';
 
 // Sample camera data to display
-const SAMPLE_CAMERAS = [
-    { id: 1, name: 'Main Entrance', stream_url: 'rtsp://192.168.1.101:554/stream1', status: 'offline' },
-    { id: 2, name: 'Server Room', stream_url: 'rtsp://192.168.1.102:554/stream1', status: 'online' },
-    { id: 3, name: 'Storage Area', stream_url: 'http://invalid.url.com/stream', status: 'error' },
-    { id: 4, name: 'Parking Lot', stream_url: 'rtsp://10.0.0.15:554/main', status: 'offline' },
-    { id: 5, name: 'Production Floor', stream_url: 'http://10.0.0.20:8080/video', status: 'online' }
-];
+// const SAMPLE_CAMERAS = [
+//     { id: 1, name: 'Main Entrance', stream_url: 'rtsp://192.168.1.101:554/stream1', status: 'offline' },
+//     { id: 2, name: 'Server Room', stream_url: 'rtsp://192.168.1.102:554/stream1', status: 'online' },
+//     { id: 3, name: 'Storage Area', stream_url: 'http://invalid.url.com/stream', status: 'error' },
+//     { id: 4, name: 'Parking Lot', stream_url: 'rtsp://10.0.0.15:554/main', status: 'offline' },
+//     { id: 5, name: 'Production Floor', stream_url: 'http://10.0.0.20:8080/video', status: 'online' }
+// ];
 
 export default function Cameras() {
     const [username, setUsername] = useState('Admin');
@@ -23,7 +24,7 @@ export default function Cameras() {
     const navigate = useNavigate();
 
     const [cameras, setCameras] = useState([]);
-    const [newCamera, setNewCamera] = useState({ name: '', stream_url: '' });
+    const [newCamera, setNewCamera] = useState({ name: '', camera_ip: '',location:'' });
     const [editingCamera, setEditingCamera] = useState(null);
     const [error, setError] = useState(null);
     const [modalError, setModalError] = useState(null);
@@ -31,7 +32,7 @@ export default function Cameras() {
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
     const [cameraToDelete, setCameraToDelete] = useState(null);
-    const [editFormData, setEditFormData] = useState({ name: '', stream_url: '' });
+    const [editFormData, setEditFormData] = useState({ name: '', camera_ip: '', location: '' });
 
     useEffect(() => {
         const token = localStorage.getItem('token') || sessionStorage.getItem('token');
@@ -57,34 +58,21 @@ export default function Cameras() {
     const toggleSidebar = () => {
         setSidebarOpen(!sidebarOpen);
     };
-
-    // Load cameras (using our dummy data)
-    /**
-     * @function loadCameras
-     * @description Fetches all cameras from the backend API
-     * 
-     * API Operation Details:
-     * - Endpoint: GET /api/cameras
-     * - Headers: Authorization: Bearer {token}
-     * - Response: Array of camera objects with id, name, stream_url, status
-     * - Error codes: 401 (Unauthorized), 500 (Server Error)
-     */
     const loadCameras = async () => {
         try {
             setIsLoading(true);
-            // Simulate API call with a delay
-            setTimeout(() => {
-                setCameras(SAMPLE_CAMERAS);
-                setError(null);
+            const response = await CameraAPI.getCameras();
+            if (response.status !== 200) {
+                throw new Error('Failed to fetch cameras');
+            }
+            if (response.data.length === 0) {
+                setError('No cameras found');
                 setIsLoading(false);
-            }, 800);
-            
-            // TODO: Real API implementation
-            // const response = await axios.get('/api/cameras', {
-            //     headers: { Authorization: `Bearer ${token}` }
-            // });
-            // setCameras(response.data);
-            
+                return;
+            }
+            setCameras(response.data);
+            setError(null);
+            setIsLoading(false);
         } catch (err) {
             console.error(err);
             setError('Failed to fetch cameras');
@@ -99,53 +87,25 @@ export default function Cameras() {
         return () => clearInterval(interval);
     }, []);
 
-    /**
-     * @function handleSubmit
-     * @description Adds a new camera to the system
-     * @param {Event} e - Form submit event
-     * 
-     * API Operation Details:
-     * - Endpoint: POST /api/cameras
-     * - Headers: Authorization: Bearer {token}, Content-Type: application/json
-     * - Request Body: { name: string, stream_url: string }
-     * - Response: Created camera object with generated ID
-     * - Error codes: 400 (Bad Request), 401 (Unauthorized)
-     */
     const handleSubmit = async (e) => {
         e.preventDefault();
         
         // Simple validation
-        if (!newCamera.name || !newCamera.stream_url) {
+        if (!newCamera.name || !newCamera.camera_ip || !newCamera.location) {
             setError('Please fill in all fields');
             return;
         }
         
         try {
             setIsLoading(true);
-            
-            // Simulate API call with a delay
-            setTimeout(() => {
-                // Add new camera with generated ID
-                const newId = Math.max(...cameras.map(c => c.id), 0) + 1;
-                setCameras([
-                    ...cameras, 
-                    { ...newCamera, id: newId, status: 'online' }
-                ]);
-                
-                setNewCamera({ name: '', stream_url: '' });
-                setError(null);
-                setIsLoading(false);
-            }, 600);
-            
-            // TODO: Real API implementation
-            // const response = await axios.post('/api/cameras', newCamera, {
-            //     headers: { 
-            //         Authorization: `Bearer ${token}`,
-            //         'Content-Type': 'application/json'
-            //     }
-            // });
-            // setCameras([...cameras, response.data]);
-            // setNewCamera({ name: '', stream_url: '' });
+            const response = await CameraAPI.addCamera(newCamera);
+            if (response.status !== 201) {
+                throw new Error('Failed to add camera');
+            }
+            setCameras([...cameras, response.data]);
+            setNewCamera({ name: '', camera_ip: '', location: '' });
+            setError(null);
+            setIsLoading(false);
             
         } catch (err) {
             console.error(err);
@@ -155,123 +115,131 @@ export default function Cameras() {
     };
 
     // Open edit modal
-    const handleEdit = (camera) => {
-        setEditingCamera(camera);
-        setEditFormData({ name: camera.name, stream_url: camera.stream_url });
-        setShowEditModal(true);
-        setModalError(null);
+    const handleEdit = (cameraId) => {
+        const camera = cameras.find(cam => cam.id === cameraId);
+        if (camera) {
+            setEditingCamera(camera);
+            setEditFormData({ 
+                name: camera.name, 
+                camera_ip: camera.camera_ip,
+                location: camera.location 
+            });
+            setShowEditModal(true);
+            setModalError(null);
+        }
     };
 
-    /**
-     * @function handleUpdateCamera
-     * @description Updates an existing camera's information
-     * 
-     * API Operation Details:
-     * - Endpoint: PUT /api/cameras/{id}
-     * - Headers: Authorization: Bearer {token}, Content-Type: application/json
-     * - Request Body: { name: string, stream_url: string }
-     * - Response: Updated camera object
-     * - Error codes: 400 (Bad Request), 401 (Unauthorized), 404 (Not Found)
-     */
-    const handleUpdateCamera = () => {
+   
+    const handleUpdateCamera = async () => {
         // Validation
-        if (!editFormData.name || !editFormData.stream_url) {
+        if (!editFormData.name || !editFormData.camera_ip || !editFormData.location) {
             setModalError('Please fill in all fields');
             return;
         }
-
+        
         setIsLoading(true);
         
-        // Simulate API call
-        setTimeout(() => {
-            // Update existing camera
-            setCameras(cameras.map(cam => 
-                cam.id === editingCamera.id 
-                    ? {...editFormData, id: editingCamera.id, status: 'online'} 
-                    : cam
-            ));
-            
+        try{
+            const updatedCamera = {
+                ...editingCamera,
+                name: editFormData.name,
+                camera_ip: editFormData.camera_ip,
+                location: editFormData.location
+            };
+            const response = await CameraAPI.updateCamera(editingCamera.id, updatedCamera);
+            if (response.status !== 200) {
+                throw new Error('Failed to update camera');
+            }
+            setCameras(cameras.map(cam => cam.id === editingCamera.id ? response.data : cam));
             setShowEditModal(false);
             setEditingCamera(null);
+            setEditFormData({ name: '', camera_ip: '', location: '' });
             setModalError(null);
             setIsLoading(false);
-        }, 600);
+
+        }catch(err){
+            console.error(err);
+            setModalError('Failed to update camera');
+            setIsLoading(false);
+        }
+
         
-        // TODO: Real API implementation
-        // try {
-        //     const response = await axios.put(`/api/cameras/${editingCamera.id}`, editFormData, {
-        //         headers: { 
-        //             Authorization: `Bearer ${token}`,
-        //             'Content-Type': 'application/json'
-        //         }
-        //     });
-        //     
-        //     // Update camera in state
-        //     setCameras(cameras.map(cam => 
-        //         cam.id === editingCamera.id ? response.data : cam
-        //     ));
-        //     
-        //     setShowEditModal(false);
-        //     setEditingCamera(null);
-        // } catch (err) {
-        //     setModalError(err.response?.data?.message || 'Failed to update camera');
-        //     setIsLoading(false);
-        // }
     };
 
     // Open delete confirmation modal
-    const confirmDelete = (camera) => {
-        setCameraToDelete(camera);
-        setShowDeleteModal(true);
+    const confirmDelete = (cameraId) => {
+        const camera = cameras.find(cam => cam.id === cameraId);
+        if (camera) {
+            setCameraToDelete(camera);
+            setShowDeleteModal(true);
+        }
     };
-
-    /**
-     * @function handleDelete
-     * @description Deletes a camera from the system
-     * 
-     * API Operation Details:
-     * - Endpoint: DELETE /api/cameras/{id}
-     * - Headers: Authorization: Bearer {token}
-     * - Response: Status 204 (No Content) on success
-     * - Error codes: 401 (Unauthorized), 404 (Not Found)
-     * - Note: Implement optimistic UI updates for better UX, and restore on failure
-     */
     const handleDelete = async () => {
         if (!cameraToDelete) return;
         
         try {
             setIsLoading(true);
             
-            // Simulate API call with a delay
-            setTimeout(() => {
-                setCameras(cameras.filter(cam => cam.id !== cameraToDelete.id));
-                setShowDeleteModal(false);
-                setCameraToDelete(null);
+            const response = await CameraAPI.deleteCamera(cameraToDelete.id);
+            if (response.status !== 204) {
+                throw new Error('Failed to delete camera');
+            }
+            if(response.status === 404){
+                setError('Camera not found');
                 setIsLoading(false);
-            }, 600);
-            
-            // TODO: Real API implementation
-            // await axios.delete(`/api/cameras/${cameraToDelete.id}`, {
-            //     headers: { Authorization: `Bearer ${token}` }
-            // });
-            // 
-            // // If successful, remove camera from state
-            // setCameras(cameras.filter(cam => cam.id !== cameraToDelete.id));
-            // setShowDeleteModal(false);
-            // setCameraToDelete(null);
+                return;
+            }
+            setCameras(cameras.filter(cam => cam.id !== cameraToDelete.id));
+            setShowDeleteModal(false);
+            setCameraToDelete(null);
+            setError(null);
+            setIsLoading(false);
             
         } catch (err) {
             console.error(err);
             setError('Failed to delete camera');
             setIsLoading(false);
-            
-            // TODO: Handle specific error cases
-            // if (err.response?.status === 404) {
-            //     // Camera already deleted, remove from UI anyway
-            //     setCameras(cameras.filter(cam => cam.id !== cameraToDelete.id));
-            //     setShowDeleteModal(false);
-            // }
         }
+    };
+
+    // Updated CameraStreamView component to work with Flask MJPEG streams
+    const CameraStreamView = ({ camera }) => {
+        const [streamError, setStreamError] = useState(false);
+        
+        // Check if we have camera_ip
+        if (!camera.camera_ip) {
+            return (
+                <div className="text-center">
+                    <FaVideo className="h-12 w-12 text-gray-600 mx-auto mb-2" />
+                    <span className="text-gray-500">No stream URL</span>
+                </div>
+            );
+        }
+        
+        // Use the Flask route from app.py
+        const streamUrl = camera.camera_ip.includes('http') 
+            ? camera.camera_ip  // Use as-is if it already has http
+            : `http://localhost:5000/fire`; // Default to Flask server route
+        
+        return (
+            <div className="relative w-full h-full">
+                {!streamError ? (
+                    <img 
+                        src={streamUrl}
+                        alt={`Stream from ${camera.name}`}
+                        className="w-full h-full object-cover"
+                        onError={() => setStreamError(true)}
+                    />
+                ) : (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="text-center">
+                            <FaExclamationCircle className="h-12 w-12 text-red-500 mx-auto mb-2" />
+                            <span className="text-red-400">Stream unavailable</span>
+                        </div>
+                    </div>
+                )}
+            </div>
+        );
     };
 
     return (
@@ -357,12 +325,22 @@ export default function Cameras() {
                                         />
                                     </div>
                                     <div>
+                                        <label className="block text-sm font-medium text-gray-400 mb-1">Camera Location</label>
+                                        <input
+                                            type="text"
+                                            placeholder="Enter Camera Location"
+                                            value={newCamera.location}
+                                            onChange={(e) => setNewCamera({ ...newCamera, location: e.target.value })}
+                                            className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        />
+                                    </div>
+                                    <div>
                                         <label className="block text-sm font-medium text-gray-400 mb-1">Stream URL</label>
                                         <input
                                             type="text"
                                             placeholder="Enter RTSP or HTTP stream URL"
-                                            value={newCamera.stream_url}
-                                            onChange={(e) => setNewCamera({ ...newCamera, stream_url: e.target.value })}
+                                            value={newCamera.camera_ip}
+                                            onChange={(e) => setNewCamera({ ...newCamera, camera_ip: e.target.value })}
                                             className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                         />
                                     </div>
@@ -409,36 +387,18 @@ export default function Cameras() {
                                 {cameras.map((cam) => (
                                     <div key={cam.id} className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden shadow-lg hover:shadow-xl transition-shadow">
                                         <div className="relative aspect-video bg-gray-900">
-                                            {/* Placeholder for camera feed with status indicators */}
-                                            <div className="absolute inset-0 flex items-center justify-center">
-                                                {cam.status === 'online' ? (
-                                                    <div className="text-center">
-                                                        <FaVideo className="h-12 w-12 text-blue-500 mx-auto mb-2" />
-                                                        <span className="text-gray-400">Live feed preview</span>
-                                                    </div>
-                                                ) : cam.status === 'error' ? (
-                                                    <div className="text-center">
-                                                        <FaExclamationCircle className="h-12 w-12 text-red-500 mx-auto mb-2" />
-                                                        <span className="text-red-400">Invalid stream URL</span>
-                                                    </div>
-                                                ) : (
-                                                    <div className="text-center">
-                                                        <FaVideo className="h-12 w-12 text-gray-600 mx-auto mb-2" />
-                                                        <span className="text-gray-500">Camera offline</span>
-                                                    </div>
-                                                )}
-                                            </div>
+                                            {/* Use CameraStreamView component instead of the placeholder */}
+                                            <CameraStreamView camera={cam} />
                                             
                                             <div className="absolute top-2 left-2 px-2 py-1 bg-gray-900/70 text-white text-xs rounded-md">
                                                 Camera #{cam.id}
                                             </div>
                                             
-                                            {cam.status === 'online' && (
-                                                <div className="absolute bottom-2 right-2 flex items-center space-x-1">
-                                                    <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse"></div>
-                                                    <span className="text-xs text-gray-300">Recording</span>
-                                                </div>
-                                            )}
+                                            {/* Show recording indicator - we'll assume it's recording if we can see the stream */}
+                                            <div className="absolute bottom-2 right-2 flex items-center space-x-1">
+                                                <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse"></div>
+                                                <span className="text-xs text-gray-300">Recording</span>
+                                            </div>
                                         </div>
                                         
                                         <div className="p-4">
@@ -454,19 +414,19 @@ export default function Cameras() {
                                                     {cam.status === 'online' ? 'Online' : cam.status === 'error' ? 'Error' : 'Offline'}
                                                 </span>
                                             </div>
-                                            <p className="text-gray-400 text-sm mb-4 truncate">{cam.stream_url}</p>
+                                            <p className="text-gray-400 text-sm mb-4 truncate">{cam.camera_ip}</p>
                                             
                                             <div className="flex gap-2">
                                                 <button
                                                     className="flex-1 bg-blue-600 hover:bg-blue-700 flex items-center justify-center px-3 py-2 text-white rounded-lg transition-colors"
-                                                    onClick={() => handleEdit(cam)}
+                                                    onClick={() => handleEdit(cam.id)}
                                                 >
                                                     <FaEdit className="mr-2" />
                                                     Edit
                                                 </button>
                                                 <button
                                                     className="flex-1 bg-red-600 hover:bg-red-700 flex items-center justify-center px-3 py-2 text-white rounded-lg transition-colors"
-                                                    onClick={() => confirmDelete(cam)}
+                                                    onClick={() => confirmDelete(cam.id)}
                                                 >
                                                     <FaTrash className="mr-2" />
                                                     Delete
@@ -502,12 +462,22 @@ export default function Cameras() {
                                 />
                             </div>
                             <div>
+                                <label className="block text-sm font-medium text-gray-400 mb-1">Camera Location</label>
+                                <input
+                                    type="text"
+                                    placeholder="Enter Camera Locations"
+                                    value={editFormData.location}
+                                    onChange={(e) => setEditFormData({ ...editFormData, location: e.target.value })}
+                                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                />
+                            </div>
+                            <div>
                                 <label className="block text-sm font-medium text-gray-400 mb-1">Stream URL</label>
                                 <input
                                     type="text"
                                     placeholder="Enter RTSP or HTTP stream URL"
-                                    value={editFormData.stream_url}
-                                    onChange={(e) => setEditFormData({ ...editFormData, stream_url: e.target.value })}
+                                    value={editFormData.camera_ip}
+                                    onChange={(e) => setEditFormData({ ...editFormData, camera_ip: e.target.value })}
                                     className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                 />
                             </div>

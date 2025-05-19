@@ -1,37 +1,15 @@
-from flask import Flask, Response
-import cv2
-import os
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
 
-app = Flask(__name__)
-
-# Get the absolute path to the 'videos' folder
-video_folder = os.path.join(os.path.dirname(__file__), 'videos')
-
-# Build the dictionary of video sources
-video_sources = {}
-count = 0
-for filename in sorted(os.listdir(video_folder)):
-    if filename.lower().endswith(('.mp4', '.avi')):
-        count += 1
-        video_sources[str(count)] = os.path.join(video_folder, filename)
-
-def generate_frames(source_id):
-    cap = cv2.VideoCapture(video_sources[source_id])
-    while cap.isOpened():
-        success, frame = cap.read()
-        if not success:
-            cap.set(cv2.CAP_PROP_POS_FRAMES, 0)  # Loop video
-            continue
-        _, buffer = cv2.imencode('.jpg', frame)
-        frame = buffer.tobytes()
-        yield (b'--frame\r\n'b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
-
-@app.route('/video/<source_id>')
-def video_feed(source_id):
-    if source_id not in video_sources:
-        return "Invalid source ID", 404
-    return Response(generate_frames(source_id),
-                    mimetype='multipart/x-mixed-replace; boundary=frame')
-
-if __name__ == '__main__':
-    app.run(host="0.0.0.0", port=5001, threaded=True)
+def send_fire_alert(message):
+    """
+    Send a fire alert message to the WebSocket group.
+    """
+    channel_layer = get_channel_layer()
+    async_to_sync(channel_layer.group_send)(
+        "fire_alert_group",
+        {
+            "type": "alert_message",
+            "message": message,
+        }
+    )

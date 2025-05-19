@@ -6,18 +6,28 @@ const CameraAPI = {
         return Base.get(endpoint);
     },
 
-    createCamera: (cameraData) => {
+    addCamera: (cameraData) => {
+        /* Data Example
+            name: "Camera 1",
+            camera_ip:"1a2d1f2a",
+            location: "Location 1",
+        */
         const endpoint = '/cameras/';
         return Base.post(endpoint, cameraData);
     },
 
     updateCamera: (cameraId, cameraData) => {
-        const endpoint = `/cameras/${cameraId}/`;
+        const endpoint = `/camera/${cameraId}/`;
+        /* Data Example
+            name: "Camera 1",
+            camera_ip:"1a2d1f2a",
+            location: "Location 1",
+       */
         return Base.put(endpoint, cameraData);
     },
 
     deleteCamera: (cameraId) => {
-        const endpoint = `/cameras/${cameraId}/`;
+        const endpoint = `/camera/${cameraId}/`;
         return Base.delete(endpoint);
     }
 };
