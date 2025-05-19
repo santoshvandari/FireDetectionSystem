@@ -1,9 +1,9 @@
 from rest_framework import  status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from API.serializers import CameraSerializer, FireDetectionEventSerializer
+from API.serializers import CameraSerializer, AlertPostSerializer,AlertGetSerializer
 from rest_framework.permissions import IsAuthenticated
-from API.models import Camera, FireDectionEvent
+from API.models import Camera, FireDetectedAlert
 from django.shortcuts import get_object_or_404
 
 
@@ -39,11 +39,6 @@ class CameraList(APIView):
 # Get Camera Details, Start Monitoring Camera, Stop  Monitoring Camera
 class CameraDetail(APIView):
     permission_classes = [IsAuthenticated]
-    def get(self, request, id):
-        camera = get_object_or_404(Camera, id=id)
-        serializer = CameraSerializer(camera)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-    
     def put(self, request, id):
         camera = get_object_or_404(Camera, id=id)
         serializer = CameraSerializer(camera, data=request.data, partial=True)
@@ -71,24 +66,40 @@ class StopDetection(APIView):
         camera = get_object_or_404(Camera, id=id)
         return Response({"message": f"Detection stopped for camera {camera.name}(IP: {camera.camera_ip})"}, status=status.HTTP_200_OK)
     
-# List all Events and Get Event Details
-class EventList(APIView):
+# List all Alert and Get DetectionHistory
+class Alert(APIView):
     def get(self, request):
-        events = FireDectionEvent.objects.all()
-        serializer = FireDetectionEventSerializer(events, many=True)
+        events = FireDetectedAlert.objects.filter(status="active")
+        serializer = AlertGetSerializer(events, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
-
-# Get Event Details
-class EventDetail(APIView):
-    def get(self, request, id):
-        event = get_object_or_404(FireDectionEvent, id=id)
-        serializer = FireDetectionEventSerializer(event)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-    
-    def put(self, request, id):
-        event = get_object_or_404(FireDectionEvent, id=id)
-        serializer = FireDetectionEventSerializer(event, data=request.data, partial=True)
+    def post(self, request):
+        serializer = AlertPostSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         serializer.save()
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+class AlertDetectionHistory(APIView):
+        def get(self, request):
+            events = FireDetectedAlert.objects.all()
+            serializer = AlertGetSerializer(events, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+
+
+
+# # Get Event Details
+# class EventDetail(APIView):
+#     def get(self, request, id):
+#         event = get_object_or_404(FireDetectedAlert, id=id)
+#         serializer = FireDetectionEventSerializer(event)
+#         return Response(serializer.data, status=status.HTTP_200_OK)
+    
+#     def put(self, request, id):
+#         event = get_object_or_404(FireDetectedAlert, id=id)
+#         serializer = FireDetectionEventSerializer(event, data=request.data, partial=True)
+#         if not serializer.is_valid():
+#             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+#         serializer.save()
+#         return Response(serializer.data, status=status.HTTP_200_OK)

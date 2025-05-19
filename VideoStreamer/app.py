@@ -1,48 +1,195 @@
-from flask import Flask, Response
+import datetime
 import cv2
+import threading
+from datetime import datetime
+from flask import Flask, render_template, Response, jsonify
+from ultralytics import YOLO
 import os
 import time
+import requests
+from flask_cors import CORS, cross_origin
 
 app = Flask(__name__)
 
-# get the videos from the video folder
-video_folder = os.path.join(os.path.dirname(__file__), 'Videos')
-# get the video sources
-video_sources = {}
-count = 0
-for filename in os.listdir(video_folder):
-    if filename.endswith('.mp4') or filename.endswith('.avi'):
-        count += 1
-        video_sources[str(count)] = "./Videos/" + filename
+# add cors in app 
+CORS(app)
+# Enable CORS for all routes
+@app.after_request
+def after_request(response):
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS')
+    return response
 
 
 
-def generate_frames(source_id):
-    cap = cv2.VideoCapture(video_sources[source_id])
-    fps = cap.get(cv2.CAP_PROP_FPS) or 25  # Default to 25 if unknown
-    frame_delay = 1 / fps
+# make a folder named snapshot to save the snap while the accident is detected
+snapshot_dir = "public/snapshots"
+os.makedirs(snapshot_dir, exist_ok=True)
 
-    while cap.isOpened():
+frame_count = 0  # Initialize frame_count outside of any function
+
+
+model = YOLO("best.pt")
+
+frame_skip = 5
+
+classnames = ["moderate-accident", "fatal-accident", "Normal"]
+
+#this function sends http post request to the server
+def send_accident_data_to_server(fire_detected_data, headers=None):
+    print("fire Detected")
+
+
+    # # Define the API endpoint
+    # api_endpoint = "http://localhost:3000/api/accidents"
+
+    # #Convert the data to JSON
+    # json_payload = json.dumps(accident_data)
+
+    # # Send the POST request to the server with the JSON payload
+    # headers = {'Content-Type': 'application/json'}
+
+    # response = requests.post(api_endpoint, data=json_payload, headers=headers)
+
+    # # Check the server's response
+    # if response.status_code == 201:
+    #     print("Data sent successfully!")
+    #     return True
+    # else:
+    #     print("Data upload failed.")
+    #     return False
+
+#post request
+
+
+def annotate_frame(frame, custom_text):
+    now = datetime.now()
+    current_time = now.strftime("%Y-%m-%d %H:%M:%S")
+
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    cv2.putText(frame, current_time, (10, 30), font, 1, (0, 0, 255), 2, cv2.LINE_AA)
+    cv2.putText(frame, custom_text, (10, 60), font, 1, (0, 255, 0), 2, cv2.LINE_AA)
+
+    results = model.predict(frame)
+
+    # Track whether a snapshot has been taken
+    snapshot_taken = False
+
+
+
+    annotated_frame = results[0].plot()
+
+    return annotated_frame
+
+
+def generate_frames(video_path, custom_text):
+    global frame_count
+    cap = cv2.VideoCapture(video_path)
+    frame_count = 0
+    snapshot_taken = False
+
+    while True:
         success, frame = cap.read()
+
         if not success:
-            cap.set(cv2.CAP_PROP_POS_FRAMES, 0)  # Loop the video
-            continue
+            break
 
-        _, buffer = cv2.imencode('.jpg', frame)
-        frame = buffer.tobytes()
+        frame_count += 1
 
-        yield (b'--frame\r\n'
-               b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+        if frame_count % frame_skip == 0:
+            # Detect "moderate-accident" and take a snapshot if not already taken
+            results = model.predict(frame)
+            print("Results:", results)
+            for r in results:
+                    class_name = model.names
 
-        time.sleep(frame_delay)  # ⏱️ Add delay to match video FPS
+                    if ("1" in class_name or "fatal-accident" in class_name) and not snapshot_taken:
+                        print("Accident Detected:", class_name)
+                       
+                        # generating the unique id
+                       
+                        current_time = datetime.now()
+
+                        timestamp_with_microseconds = current_time.timestamp()
+                        microseconds = int((timestamp_with_microseconds % 1) * 1e6)
+
+                        unique_number = int(timestamp_with_microseconds * 1e6) + microseconds
+                       
+                        #snap shot is taken here
+                        snapshot_filename = os.path.join(snapshot_dir, f"snapshot_{unique_number}.jpg")
+                        cv2.imwrite(snapshot_filename, frame)
+                        snapshot_taken = True
+
+                        # if port 49 is not working then the new IP address will be
+                        # ipaddress=f"HTTP://127.0.0.1:5000/{custom_text}"
+                        
+                        # and comment this line 
+                        ipaddress=f"http://127.0.0.1:49/{custom_text}"
+                       
+                        accident_data={
+                            "photos":f"snapshots/snapshot_{unique_number}.jpg",
+                            "ipAddress":ipaddress
+                            }
+                       
+                        print(accident_data)
+                       
+                        #send http post request to the server
+                        send_accident_data_to_server(accident_data)
+                        break  # Exit the loop once the snapshot is taken
+
+            annotated_frame = annotate_frame(frame, custom_text)
+
+            _, buffer = cv2.imencode('.jpg', annotated_frame)
+            frame_bytes = buffer.tobytes()
+
+            yield (b'--frame\r\n'
+                   b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
+
+    cap.release()
 
 
-@app.route('/video/<source_id>')
-def video_feed(source_id):
-    if source_id not in video_sources:
-        return "Invalid source ID", 404
-    return Response(generate_frames(source_id),
-                    mimetype='multipart/x-mixed-replace; boundary=frame')
 
+# @app.route('/video')
+# def video():
+#     video_path = "test1.mp4"
+#     custom_text = "pulchowk"
+ 
+#     return Response(generate_frames(video_path, custom_text), mimetype='multipart/x-mixed-replace; boundary=frame')
+
+# while running the file go to the index.html page and render the templates
+@app.route('/')
+def index():
+    return jsonify({"message": "Welcome to the Video Streamer!"})
+
+
+# hosting the video in the different path and passsing the video link to the path.
+@app.route('/fire')
+def video1():
+    video_path = "./Videos/video1.mp4"  
+    custom_text = "Video"
+    return Response(generate_frames(video_path, custom_text), mimetype='multipart/x-mixed-replace; boundary=frame')
+
+@app.route("/normal")
+def video2():
+    video_path = "./Videos/video2.mp4"  
+    custom_text = "normal"
+    return Response(generate_frames(video_path, custom_text), mimetype='multipart/x-mixed-replace; boundary=frame')
+
+# @app.route('/koteshore')
+# def video2():
+#     video_path = "koteshore.mp4"  
+#     custom_text = "koteshore"
+#     return Response(generate_frames(video_path, custom_text), mimetype='multipart/x-mixed-replace; boundary=frame')
+
+# @app.route('/test')
+# def video3():
+#     video_path = "test1.mp4"  
+#     custom_text = "test"
+#     return Response(generate_frames(video_path, custom_text), mimetype='multipart/x-mixed-replace; boundary=frame')
+
+# hosting the entire file in the port 49
+# if the port 49 is not working then remove port=49 and update the ipaddress from above
 if __name__ == '__main__':
-    app.run(port=5001, threaded=True)
+    app.run(port=5000, debug=False)
+    # app.run(debug=False)
