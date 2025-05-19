@@ -18,7 +18,7 @@ class AlertPostSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class AlertGetSerializer(serializers.ModelSerializer):
-    camera = CameraBriefSerializer()
+    camera_id = CameraBriefSerializer()
     class Meta:
         model = FireDetectedAlert
         fields='__all__'

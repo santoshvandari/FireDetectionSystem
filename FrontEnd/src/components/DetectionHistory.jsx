@@ -3,11 +3,12 @@ import {
     FaHistory, FaSync, FaBars, FaTimes, 
     FaFire, FaSearch, FaArrowLeft, FaArrowRight,
     FaCalendarAlt, FaClock, FaCamera, FaDownload, 
-    FaFilter, FaEye, FaListUl
+    FaFilter, FaEye, FaListUl, FaCheckCircle
 } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import Header from './Header';
 import Sidebar from './Sidebar';
+import AlertAPI from '../api/alerts';
 
 // Sample detection logs data
 const SAMPLE_LOGS = [
@@ -30,176 +31,6 @@ const SAMPLE_LOGS = [
         confidence: 95.2,
         status: 'resolved',
         image_url: 'https://via.placeholder.com/800x600/FF6644/FFFFFF?text=FIRE+DETECTED'
-    },
-    {
-        id: 3,
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(), // 5 hours ago
-        camera_name: 'Main Entrance',
-        camera_id: 1,
-        location: 'Reception Area',
-        confidence: 78.4,
-        status: 'resolved',
-        image_url: 'https://via.placeholder.com/800x600/FF5544/FFFFFF?text=FIRE+DETECTED'
-    },
-    {
-        id: 4,
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), // 1 day ago
-        camera_name: 'Production Floor',
-        camera_id: 5,
-        location: 'Manufacturing Zone B',
-        confidence: 92.1,
-        status: 'resolved',
-        image_url: 'https://via.placeholder.com/800x600/FF3344/FFFFFF?text=FIRE+DETECTED'
-    },
-    {
-        id: 5,
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(), // 2 days ago
-        camera_name: 'Server Room',
-        camera_id: 2,
-        location: 'Building A, Floor 2',
-        confidence: 88.3,
-        status: 'resolved',
-        image_url: 'https://via.placeholder.com/800x600/FF4444/FFFFFF?text=FIRE+DETECTED'
-    },
-    {
-        id: 6,
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(), // 2 days ago
-        camera_name: 'Server Room',
-        camera_id: 2,
-        location: 'Building A, Floor 2',
-        confidence: 88.3,
-        status: 'resolved',
-        image_url: 'https://via.placeholder.com/800x600/FF4444/FFFFFF?text=FIRE+DETECTED'
-    },
-    {
-        id: 7,
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(), // 2 days ago
-        camera_name: 'Server Room',
-        camera_id: 2,
-        location: 'Building A, Floor 2',
-        confidence: 88.3,
-        status: 'resolved',
-        image_url: 'https://via.placeholder.com/800x600/FF4444/FFFFFF?text=FIRE+DETECTED'
-    },
-    {
-        id: 8,
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(), // 2 days ago
-        camera_name: 'Server Room',
-        camera_id: 2,
-        location: 'Building A, Floor 2',
-        confidence: 88.3,
-        status: 'resolved',
-        image_url: 'https://via.placeholder.com/800x600/FF4444/FFFFFF?text=FIRE+DETECTED'
-    },
-    {
-        id: 9,
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(), // 2 days ago
-        camera_name: 'Server Room',
-        camera_id: 2,
-        location: 'Building A, Floor 2',
-        confidence: 88.3,
-        status: 'resolved',
-        image_url: 'https://via.placeholder.com/800x600/FF4444/FFFFFF?text=FIRE+DETECTED'
-    },
-    {
-        id: 10,
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(), // 2 days ago
-        camera_name: 'Server Room',
-        camera_id: 2,
-        location: 'Building A, Floor 2',
-        confidence: 88.3,
-        status: 'resolved',
-        image_url: 'https://via.placeholder.com/800x600/FF4444/FFFFFF?text=FIRE+DETECTED'
-    },
-    {
-        id: 11,
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(), // 2 days ago
-        camera_name: 'Server Room',
-        camera_id: 2,
-        location: 'Building A, Floor 2',
-        confidence: 88.3,
-        status: 'resolved',
-        image_url: 'https://via.placeholder.com/800x600/FF4444/FFFFFF?text=FIRE+DETECTED'
-    },
-    {
-        id: 12,
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(), // 2 days ago
-        camera_name: 'Server Room',
-        camera_id: 2,
-        location: 'Building A, Floor 2',
-        confidence: 88.3,
-        status: 'resolved',
-        image_url: 'https://via.placeholder.com/800x600/FF4444/FFFFFF?text=FIRE+DETECTED'
-    },
-    {
-        id: 13,
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(), // 2 days ago
-        camera_name: 'Server Room',
-        camera_id: 2,
-        location: 'Building A, Floor 2',
-        confidence: 88.3,
-        status: 'resolved',
-        image_url: 'https://via.placeholder.com/800x600/FF4444/FFFFFF?text=FIRE+DETECTED'
-    },
-    {
-        id: 14,
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(), // 2 days ago
-        camera_name: 'Server Room',
-        camera_id: 2,
-        location: 'Building A, Floor 2',
-        confidence: 88.3,
-        status: 'resolved',
-        image_url: 'https://via.placeholder.com/800x600/FF4444/FFFFFF?text=FIRE+DETECTED'
-    },
-    {
-        id: 15,
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(), // 2 days ago
-        camera_name: 'Server Room',
-        camera_id: 2,
-        location: 'Building A, Floor 2',
-        confidence: 88.3,
-        status: 'resolved',
-        image_url: 'https://via.placeholder.com/800x600/FF4444/FFFFFF?text=FIRE+DETECTED'
-    },
-    {
-        id: 5,
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(), // 2 days ago
-        camera_name: 'Server Room',
-        camera_id: 2,
-        location: 'Building A, Floor 2',
-        confidence: 88.3,
-        status: 'resolved',
-        image_url: 'https://via.placeholder.com/800x600/FF4444/FFFFFF?text=FIRE+DETECTED'
-    },
-    {
-        id: 5,
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(), // 2 days ago
-        camera_name: 'Server Room',
-        camera_id: 2,
-        location: 'Building A, Floor 2',
-        confidence: 88.3,
-        status: 'resolved',
-        image_url: 'https://via.placeholder.com/800x600/FF4444/FFFFFF?text=FIRE+DETECTED'
-    },
-    {
-        id: 5,
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(), // 2 days ago
-        camera_name: 'Server Room',
-        camera_id: 2,
-        location: 'Building A, Floor 2',
-        confidence: 88.3,
-        status: 'resolved',
-        image_url: 'https://via.placeholder.com/800x600/FF4444/FFFFFF?text=FIRE+DETECTED'
-    },
-    {
-        id: 5,
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(), // 2 days ago
-        camera_name: 'Server Room',
-        camera_id: 2,
-        location: 'Building A, Floor 2',
-        confidence: 88.3,
-        status: 'resolved',
-        image_url: 'https://via.placeholder.com/800x600/FF4444/FFFFFF?text=FIRE+DETECTED'
     }
 ];
 
@@ -215,11 +46,11 @@ const DetectionHistory = () => {
     const [totalPages, setTotalPages] = useState(1);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedCamera, setSelectedCamera] = useState('all');
+    const [selectedStatus, setSelectedStatus] = useState('all');
     const [showPreviewModal, setShowPreviewModal] = useState(false);
     const [previewImage, setPreviewImage] = useState(null);
     const [pageSize, setPageSize] = useState(5); // Default page size
-
-    const camerasInLogs = [...new Set(SAMPLE_LOGS.map(log => log.camera_name))];
+    const [camerasInLogs, setCamerasInLogs] = useState([]);
 
     useEffect(() => {
         const token = localStorage.getItem('token') || sessionStorage.getItem('token');
@@ -242,48 +73,85 @@ const DetectionHistory = () => {
         return () => window.removeEventListener('resize', checkScreenSize);
     }, [navigate]);
 
+    useEffect(() => {
+        const fetchFiltersData = async () => {
+            try {
+                const response = await AlertAPI.getAlerts();
+                
+                // Extract unique camera names
+                const uniqueCameras = [...new Set(
+                    response.data
+                        .filter(alert => alert.camera_id && alert.camera_id.name)
+                        .map(alert => alert.camera_id.name)
+                )];
+                
+                setCamerasInLogs(uniqueCameras);
+            } catch (error) {
+                console.error('Error fetching filter data:', error);
+            }
+        };
+        
+        fetchFiltersData();
+    }, []);
+
     const toggleSidebar = () => {
         setSidebarOpen(!sidebarOpen);
     };
 
-    // Updated loadLogs function to use dynamic pageSize
     const loadLogs = async (pageNumber) => {
         setLoading(true);
         setError(null);
         
         try {
-            // Simulate API call with sample data and pagination
-            setTimeout(() => {
-                // In a real app, this would be the API call with page size parameter
-                // const data = await fetchFireLogs(pageNumber, pageSize);
-                
-                // Filter logs by search query and camera selection
-                let filteredLogs = [...SAMPLE_LOGS];
-                
-                if (searchQuery) {
-                    const query = searchQuery.toLowerCase();
-                    filteredLogs = filteredLogs.filter(log => 
-                        log.camera_name.toLowerCase().includes(query) ||
-                        log.location.toLowerCase().includes(query)
-                    );
-                }
-                
-                if (selectedCamera !== 'all') {
-                    filteredLogs = filteredLogs.filter(log => 
-                        log.camera_name === selectedCamera
-                    );
-                }
-                
-                // Updated pagination logic using dynamic pageSize
-                const totalFilteredPages = Math.ceil(filteredLogs.length / pageSize);
-                const start = (pageNumber - 1) * pageSize;
-                const end = start + pageSize;
-                const paginatedLogs = filteredLogs.slice(start, end);
-                
-                setLogs(paginatedLogs);
-                setTotalPages(totalFilteredPages || 1);
-                setLoading(false);
-            }, 800);
+            // Get alerts from the API
+            const response = await AlertAPI.getAlerts();
+            
+            // Transform the API data to match the expected format
+            const transformedLogs = response.data.map(alert => ({
+                id: alert.id,
+                timestamp: alert.timestamp,
+                camera_name: alert.camera_id?.name || 'Unknown Camera',
+                camera_id: alert.camera_id?.id || 0,
+                location: alert.camera_id?.location || 'Unknown Location',
+                confidence: alert.confidence * 100,
+                status: alert.status,
+                image_url: alert.detected_frame
+            }));
+            
+            let filteredLogs = [...transformedLogs];
+            
+            // Apply search filter
+            if (searchQuery) {
+                const query = searchQuery.toLowerCase();
+                filteredLogs = filteredLogs.filter(log => 
+                    log.camera_name.toLowerCase().includes(query) ||
+                    (log.location && log.location.toLowerCase().includes(query))
+                );
+            }
+            
+            // Apply camera filter
+            if (selectedCamera !== 'all') {
+                filteredLogs = filteredLogs.filter(log => 
+                    log.camera_name === selectedCamera
+                );
+            }
+            
+            // Apply status filter
+            if (selectedStatus !== 'all') {
+                filteredLogs = filteredLogs.filter(log => 
+                    log.status.toLowerCase() === selectedStatus.toLowerCase()
+                );
+            }
+            
+            // Updated pagination logic
+            const totalFilteredPages = Math.ceil(filteredLogs.length / pageSize);
+            const start = (pageNumber - 1) * pageSize;
+            const end = start + pageSize;
+            const paginatedLogs = filteredLogs.slice(start, end);
+            
+            setLogs(paginatedLogs);
+            setTotalPages(totalFilteredPages || 1);
+            setLoading(false);
         } catch (error) {
             console.error('Error loading logs:', error);
             setError('Failed to load detection history. Please try again.');
@@ -291,10 +159,9 @@ const DetectionHistory = () => {
         }
     };
 
-    // Effect to load logs when page, search query, selected camera, or pageSize changes
     useEffect(() => {
         loadLogs(page);
-    }, [page, searchQuery, selectedCamera, pageSize]);
+    }, [page, searchQuery, selectedCamera, selectedStatus, pageSize]);
 
     const handlePageChange = (newPage) => {
         if (newPage >= 1 && newPage <= totalPages) {
@@ -310,6 +177,68 @@ const DetectionHistory = () => {
     const openPreviewModal = (imageUrl) => {
         setPreviewImage(imageUrl);
         setShowPreviewModal(true);
+    };
+
+    const handleDownload = (imageUrl) => {
+        if (!imageUrl) return;
+        
+        try {
+            // For direct download via browser
+            const link = document.createElement('a');
+            link.href = imageUrl;
+            link.download = `fire-detection-${new Date().getTime()}.jpg`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } catch (error) {
+            console.error('Download failed:', error);
+            setError('Failed to download image. Please try again.');
+        }
+    };
+
+    const exportLogsAsCSV = async () => {
+        try {
+            setLoading(true);
+            const response = await AlertAPI.getAlerts();
+            
+            const allLogs = response.data.map(alert => ({
+                ID: alert.id,
+                Date: new Date(alert.timestamp).toLocaleDateString(),
+                Time: new Date(alert.timestamp).toLocaleTimeString(),
+                Camera: alert.camera_id?.name || 'Unknown',
+                Location: alert.camera_id?.location || 'Unknown',
+                'Confidence (%)': (alert.confidence * 100).toFixed(1),
+                Status: alert.status
+            }));
+            
+            // Create CSV content
+            const headers = Object.keys(allLogs[0]).join(',');
+            const csvRows = allLogs.map(log => 
+                Object.values(log).map(value => 
+                    typeof value === 'string' && value.includes(',') 
+                        ? `"${value}"` 
+                        : value
+                ).join(',')
+            );
+            
+            const csvContent = [headers, ...csvRows].join('\n');
+            
+            // Download the CSV file
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `fire-detections-${new Date().toISOString().slice(0, 10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            setLoading(false);
+        } catch (error) {
+            console.error('Error exporting logs:', error);
+            setError('Failed to export detection history');
+            setLoading(false);
+        }
     };
 
     const formatDate = (dateString) => {
@@ -351,6 +280,22 @@ const DetectionHistory = () => {
             return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
         }
         return 'Just now';
+    };
+
+    // Add this helper function before the return statement
+    const getStatusStyles = (status) => {
+        switch (status.toLowerCase()) {
+            case 'active':
+                return 'bg-green-100 text-green-800';
+            case 'resolved':
+                return 'bg-blue-100 text-blue-800';
+            case 'pending':
+                return 'bg-yellow-100 text-yellow-800';
+            case 'error':
+                return 'bg-red-100 text-red-800';
+            default:
+                return 'bg-gray-100 text-gray-800';
+        }
     };
 
     return (
@@ -419,7 +364,10 @@ const DetectionHistory = () => {
                                     <FaSync className={`mr-2 ${loading ? 'animate-spin' : ''}`} />
                                     Refresh
                                 </button>
-                                <button className="flex items-center bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors">
+                                <button 
+                                    onClick={exportLogsAsCSV} 
+                                    className="flex items-center bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+                                >
                                     <FaDownload className="mr-2" />
                                     Export
                                 </button>
@@ -471,7 +419,33 @@ const DetectionHistory = () => {
                                             </div>
                                         </div>
                                     </div>
-                                    
+
+                                    {/* Status filter dropdown */}
+                                    <div className="relative inline-block">
+                                        <div className="flex items-center">
+                                            <FaCheckCircle className="text-gray-500 mr-2" />
+                                            <select
+                                                value={selectedStatus}
+                                                onChange={(e) => {
+                                                    setSelectedStatus(e.target.value);
+                                                    setPage(1); // Reset to first page on filter change
+                                                }}
+                                                className="bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none pr-8"
+                                            >
+                                                <option value="all">All Statuses</option>
+                                                <option value="active">Active</option>
+                                                <option value="resolved">Resolved</option>
+                                                <option value="pending">Pending</option>
+                                                <option value="error">Error</option>
+                                            </select>
+                                            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-400">
+                                                <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                                                    <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                                                </svg>
+                                            </div>
+                                        </div>
+                                    </div>
+
                                     {/* New Page Size selector */}
                                     <div className="relative inline-block">
                                         <div className="flex items-center">
@@ -516,7 +490,7 @@ const DetectionHistory = () => {
                                 <FaHistory className="mx-auto text-4xl text-gray-600 mb-3" />
                                 <h3 className="text-xl font-semibold text-white mb-2">No Detection History Found</h3>
                                 <p className="text-gray-400">
-                                    {searchQuery || selectedCamera !== 'all'
+                                    {searchQuery || selectedCamera !== 'all' || selectedStatus !== 'all'
                                         ? 'No detection logs match your search criteria'
                                         : 'No fire detections have been recorded yet'}
                                 </p>
@@ -543,6 +517,9 @@ const DetectionHistory = () => {
                                                     </th>
                                                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                                                         Preview
+                                                    </th>
+                                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                                                        Status
                                                     </th>
                                                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                                                         Action
@@ -604,8 +581,13 @@ const DetectionHistory = () => {
                                                             )}
                                                         </td>
                                                         <td className="px-4 py-4">
+                                                            <div className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${getStatusStyles(log.status)}`}>
+                                                                {log.status}
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-4 py-4">
                                                             <button
-                                                                onClick={() => window.open(log.image_url, '_blank')}
+                                                                onClick={() => handleDownload(log.image_url)}
                                                                 disabled={!log.image_url}
                                                                 className={`px-3 py-1 rounded-md text-xs font-medium ${
                                                                     log.image_url 
@@ -667,7 +649,7 @@ const DetectionHistory = () => {
                                                 )}
                                                 
                                                 <button
-                                                    onClick={() => window.open(log.image_url, '_blank')}
+                                                    onClick={() => handleDownload(log.image_url)}
                                                     disabled={!log.image_url}
                                                     className={`w-full py-2 rounded-md font-medium ${
                                                         log.image_url 
@@ -691,6 +673,7 @@ const DetectionHistory = () => {
                                             <span className="font-medium text-white">
                                                 {SAMPLE_LOGS.filter(log => 
                                                     (selectedCamera === 'all' || log.camera_name === selectedCamera) &&
+                                                    (selectedStatus === 'all' || log.status.toLowerCase() === selectedStatus.toLowerCase()) &&
                                                     (!searchQuery || log.camera_name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                                                      log.location.toLowerCase().includes(searchQuery.toLowerCase()))
                                                 ).length}
@@ -752,7 +735,7 @@ const DetectionHistory = () => {
                         </div>
                         <div className="flex justify-end p-4 border-t border-gray-700">
                             <button
-                                onClick={() => window.open(previewImage, '_blank')}
+                                onClick={() => handleDownload(previewImage)}
                                 className="flex items-center bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
                             >
                                 <FaDownload className="mr-2" />
