@@ -19,6 +19,6 @@ urlpatterns = [
     path("camera/<id>/stop/",views.StopDetection.as_view(), name="camera_stop"),
     # Fire Detection Event
     path("alerts/",views.AlertDetectionHistory.as_view(), name="event_list"),
-    path("alerts/active",views.Alert.as_view(), name="event_detail"),
+    path("alerts/active/",views.Alert.as_view(), name="event_detail"),
     
 ]

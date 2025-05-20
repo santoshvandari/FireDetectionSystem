@@ -9,15 +9,25 @@ import {
     FaBell,
     FaSignOutAlt
 } from 'react-icons/fa';
-import { useState } from "react";
-
+import { use,useEffect, useState } from "react";
+import AlertAPI from '../api/alerts'; // Adjust the import path as necessary
 const Sidebar = () => {
     const location = useLocation();
-    const [alertsCount, setAlertsCount] = useState(1);
+    const [alertsCount, setAlertsCount] = useState(0);
 
     // Function to check if link is active
     const isActive = (path) => {
         return location.pathname === path;
+    };
+    useEffect(() => {
+        // Fetch alerts when the component mounts
+        fetchAlerts();
+    }, []);
+
+    const fetchAlerts = async () => {
+        const response = await AlertAPI.getActiveAlerts();
+        setAlertsCount(response.data.length);
+            
     };
     
     return (

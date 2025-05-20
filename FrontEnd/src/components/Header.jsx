@@ -12,10 +12,11 @@ import {
     FaClock
 } from 'react-icons/fa';
 import { Link, useNavigate } from 'react-router-dom';
+import AlertAPI from '../api/alerts'; // Adjust the import path as necessary
 
-const Header = ({ username, toggleSidebar, sidebarOpen }) => {
+const Header = ({ username, toggleSidebar, sidebarOpen}) => {
     const [showProfileMenu, setShowProfileMenu] = useState(false);
-    const [notifications,setNotification] = useState(2); // Sample notification count
+    const [notifications,setNotification] = useState(); // Sample notification count
     const [currentTime, setCurrentTime] = useState(new Date());
     const dropdownRef = useRef(null);
     const navigate = useNavigate();
@@ -53,6 +54,16 @@ const Header = ({ username, toggleSidebar, sidebarOpen }) => {
 
         // Redirect to login page
         navigate('/');
+    };
+
+    useEffect(() => {
+        // Fetch alerts when the component mounts
+        fetchAlerts();
+    }, []);
+    const fetchAlerts = async () => {
+        const response = await AlertAPI.getActiveAlerts();
+        setNotification(response.data.length);
+            
     };
 
     return (

@@ -5,6 +5,7 @@ from API.serializers import CameraSerializer, AlertPostSerializer,AlertGetSerial
 from rest_framework.permissions import IsAuthenticated
 from API.models import Camera, FireDetectedAlert
 from django.shortcuts import get_object_or_404
+from django.db.models import Q
 
 
 class HelloWorld(APIView):
@@ -69,24 +70,31 @@ class StopDetection(APIView):
 # List all Alert and Get DetectionHistory
 class Alert(APIView):
     def get(self, request):
-        events = FireDetectedAlert.objects.filter(status="active")
+        events = FireDetectedAlert.objects.filter(Q(status="active") | Q(status="pending"))
         serializer = AlertGetSerializer(events, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
-    def post(self, request):
-        serializer = AlertPostSerializer(data=request.data)
-        if not serializer.is_valid():
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
 
 class AlertDetectionHistory(APIView):
         def get(self, request):
             events = FireDetectedAlert.objects.all()
             serializer = AlertGetSerializer(events, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
-
-
-
+        
+        def post(self, request):
+            serializer = AlertPostSerializer(data=request.data)
+            if not serializer.is_valid():
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        def put(self, request):
+            id = request.data.pop('id', None)
+            event = get_object_or_404(FireDetectedAlert, id=id)
+            serializer = AlertPostSerializer(event, data=request.data, partial=True)
+            if not serializer.is_valid():
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 # # Get Event Details

@@ -2,41 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { 
     FaExclamationTriangle, FaTrash, FaSync, 
     FaCalendarAlt, FaClock, FaCamera, FaBars, 
-    FaTimes, FaFire, FaBell, FaSearch, FaCheck
+    FaTimes, FaFire, FaBell, FaSearch, FaCheck,
+    FaFilter
 } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import Header from './Header';
 import Sidebar from './Sidebar';
-
-// Sample alert data - showing only active alerts
-const SAMPLE_ALERTS = [
-    { 
-        id: 1, 
-        camera_name: 'Server Room', 
-        camera_id: 2,
-        timestamp: new Date(Date.now() - 1000 * 60 * 15).toISOString(), // 15 mins ago
-        image_url: 'https://via.placeholder.com/800x600/FF4444/FFFFFF?text=FIRE+DETECTED',
-        confidence: 89.7,
-        status: 'active'
-    },
-    { 
-        id: 2, 
-        camera_name: 'Warehouse East', 
-        camera_id: 4,
-        timestamp: new Date(Date.now() - 1000 * 60 * 120).toISOString(), // 2 hours ago
-        image_url: 'https://via.placeholder.com/800x600/FF6644/FFFFFF?text=FIRE+DETECTED',
-        confidence: 95.2,
-        status: 'active'
-    }   , { 
-        id: 3, 
-        camera_name: 'Warehouse East', 
-        camera_id: 4,
-        timestamp: new Date(Date.now() - 1000 * 60 * 120).toISOString(), // 2 hours ago
-        image_url: 'https://via.placeholder.com/800x600/FF6644/FFFFFF?text=FIRE+DETECTED',
-        confidence: 95.2,
-        status: 'active'
-    }
-];
+import AlertAPI from '../api/alerts';
 
 const Alerts = () => {
     const [username, setUsername] = useState('Santosh');
@@ -46,9 +18,8 @@ const Alerts = () => {
     const [alerts, setAlerts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [showDeleteModal, setShowDeleteModal] = useState(false);
-    const [alertToDelete, setAlertToDelete] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
+    const [statusFilter, setStatusFilter] = useState('all'); // 'all', 'active', or 'pending'
 
     useEffect(() => {
         const token = localStorage.getItem('token') || sessionStorage.getItem('token');
@@ -79,74 +50,51 @@ const Alerts = () => {
         try {
             setLoading(true);
             setError(null);
+
+
+            const response = await AlertAPI.getActiveAlerts();
+            if (response.status !== 200) {
+                throw new Error('Failed to fetch alerts');
+            }
+
+            const transformedLogs = response.data.map(alert => ({
+                id: alert.id,
+                timestamp: alert.timestamp,
+                camera_name: alert.camera_id?.name || 'Unknown Camera',
+                camera_id: alert.camera_id?.id || 0,
+                location: alert.camera_id?.location || 'Unknown Location',
+                confidence: alert.confidence * 100,
+                status: alert.status,
+                image_url: alert.detected_frame
+            }));
+            setAlerts(transformedLogs);
+            console.log('Transformed alerts:', transformedLogs);
             
-            // Simulate API call with sample data - filtering to show only active alerts
-            setTimeout(() => {
-                // Only active alerts
-                setAlerts(SAMPLE_ALERTS.filter(alert => alert.status === 'active'));
-                setLoading(false);
-            }, 800);
-            
-            // Real API call would look like this:
-            // const res = await fetch('/api/alerts/active', {
-            //     headers: {
-            //         'Authorization': `Bearer ${localStorage.getItem('token') || sessionStorage.getItem('token')}`,
-            //     },
-            // });
-            // 
-            // if (!res.ok) {
-            //     throw new Error('Failed to fetch alerts');
-            // }
-            // 
-            // const data = await res.json();
-            // setAlerts(data);
-            // setLoading(false);
+            setLoading(false);
             
         } catch (error) {
             console.error('Failed to fetch alerts:', error);
-            setError('Failed to load active alerts. Please try again.');
+            setError('Failed to load alerts. Please try again.');
             setLoading(false);
         }
     };
 
-    const confirmDelete = (alert) => {
-        setAlertToDelete(alert);
-        setShowDeleteModal(true);
-    };
-
-    const handleDelete = async () => {
-        if (!alertToDelete) return;
-        
+    const handlePending = async (id) => {
         try {
             setLoading(true);
+            const response = await AlertAPI.updateAlert(id, 'pending');
+            if (response.status !== 200) {
+                throw new Error('Failed to update alert status');
+            }
             
-            // Simulate API call
-            setTimeout(() => {
-                setAlerts(alerts.filter(alert => alert.id !== alertToDelete.id));
-                setShowDeleteModal(false);
-                setAlertToDelete(null);
-                setLoading(false);
-            }, 600);
+            setAlerts(alerts.map(alert => 
+                alert.id === id ? { ...alert, status: 'pending' } : alert
+            ));
             
-            // Real API call would look like this:
-            // const res = await fetch(`/api/alerts/${alertToDelete.id}/`, {
-            //     method: 'DELETE',
-            //     headers: {
-            //         'Authorization': `Bearer ${localStorage.getItem('token') || sessionStorage.getItem('token')}`,
-            //     },
-            // });
-            // 
-            // if (!res.ok) {
-            //     throw new Error('Failed to delete alert');
-            // }
-            // 
-            // setAlerts(alerts.filter(alert => alert.id !== alertToDelete.id));
-            // setShowDeleteModal(false);
-            // setAlertToDelete(null);
-            
+            setLoading(false);
         } catch (err) {
-            console.error('Delete error:', err);
-            setError('Failed to delete alert. Please try again.');
+            console.error('Pending error:', err);
+            setError('Failed to update alert. Please try again.');
             setLoading(false);
         }
     };
@@ -154,29 +102,14 @@ const Alerts = () => {
     const handleResolve = async (id) => {
         try {
             setLoading(true);
+            const response = await AlertAPI.updateAlert(id, 'resolved');
+            if (response.status !== 200) {
+                throw new Error('Failed to update alert status');
+            }
             
-            // Simulate API call - remove from list when resolved
-            setTimeout(() => {
-                // Remove the resolved alert from the list since we only show active alerts
-                setAlerts(alerts.filter(alert => alert.id !== id));
-                setLoading(false);
-            }, 600);
+            setAlerts(alerts.filter(alert => alert.id !== id));
             
-            // Real API call would look like this:
-            // const res = await fetch(`/api/alerts/${id}/resolve/`, {
-            //     method: 'PUT',
-            //     headers: {
-            //         'Authorization': `Bearer ${localStorage.getItem('token') || sessionStorage.getItem('token')}`,
-            //     },
-            // });
-            // 
-            // if (!res.ok) {
-            //     throw new Error('Failed to resolve alert');
-            // }
-            // 
-            // // Remove the resolved alert from the list
-            // setAlerts(alerts.filter(alert => alert.id !== id));
-            
+            setLoading(false);
         } catch (err) {
             console.error('Resolve error:', err);
             setError('Failed to resolve alert. Please try again.');
@@ -187,14 +120,15 @@ const Alerts = () => {
     useEffect(() => {
         fetchAlerts();
         
-        // Auto-refresh active alerts every 30 seconds
         const interval = setInterval(fetchAlerts, 30000);
         return () => clearInterval(interval);
     }, []);
 
-    // Filter alerts based on search query
     const filteredAlerts = alerts.filter(alert => {
-        // Filter by search query
+        if (statusFilter !== 'all' && alert.status !== statusFilter) {
+            return false;
+        }
+        
         if (searchQuery) {
             const query = searchQuery.toLowerCase();
             return (
@@ -205,6 +139,9 @@ const Alerts = () => {
         
         return true;
     });
+
+    const activeCount = alerts.filter(alert => alert.status === 'active').length;
+    const pendingCount = alerts.filter(alert => alert.status === 'pending').length;
 
     const formatDate = (dateString) => {
         const date = new Date(dateString);
@@ -224,7 +161,6 @@ const Alerts = () => {
         }).format(date);
     };
 
-    // Calculate time difference from now
     const getTimeAgo = (dateString) => {
         const now = new Date();
         const alertDate = new Date(dateString);
@@ -249,7 +185,6 @@ const Alerts = () => {
 
     return (
         <div className="flex h-screen w-screen bg-gray-900 text-gray-100 overflow-hidden">
-            {/* Overlay for mobile when sidebar is open */}
             {sidebarOpen && (
                 <div 
                     className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-20"
@@ -257,7 +192,6 @@ const Alerts = () => {
                 ></div>
             )}
             
-            {/* Sidebar with responsive behavior */}
             <div 
                 className={`fixed lg:static inset-y-0 left-0 z-30 transform ${
                     sidebarOpen ? 'translate-x-0' : '-translate-x-full'
@@ -266,9 +200,7 @@ const Alerts = () => {
                 <Sidebar />
             </div>
             
-            {/* Main content area */}
             <div className="flex-1 flex flex-col h-full w-full overflow-hidden">
-                {/* Mobile header with menu toggle */}
                 <div className="lg:hidden flex items-center px-4 py-2 bg-gray-800 border-b border-gray-700">
                     <button 
                         onClick={toggleSidebar}
@@ -282,7 +214,6 @@ const Alerts = () => {
                     </div>
                 </div>
                 
-                {/* Desktop header */}
                 <div className="hidden lg:block">
                     <Header 
                         username={username} 
@@ -291,20 +222,26 @@ const Alerts = () => {
                     />
                 </div>
                 
-                {/* Alerts content */}
                 <div className="flex-1 overflow-auto p-4 sm:p-6 md:p-8">
                     <div className="max-w-7xl mx-auto">
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
                             <div>
-                                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white mb-2">Active Fire Alerts</h1>
+                                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white mb-2">
+                                    Fire Alerts Dashboard
+                                </h1>
                                 <p className="text-sm sm:text-base text-gray-400">
-                                    Immediate attention required for these active fire detections
+                                    Manage active and pending fire detection alerts
                                 </p>
                             </div>
                             <div className="flex items-center mt-3 sm:mt-0">
-                                {alerts.length > 0 && (
+                                {activeCount > 0 && (
                                     <div className="mr-3 px-3 py-1 bg-red-500 text-white text-sm font-medium rounded-full animate-pulse">
-                                        {alerts.length} Active {alerts.length === 1 ? 'Alert' : 'Alerts'}
+                                        {activeCount} Active
+                                    </div>
+                                )}
+                                {pendingCount > 0 && (
+                                    <div className="mr-3 px-3 py-1 bg-yellow-500 text-white text-sm font-medium rounded-full">
+                                        {pendingCount} Pending
                                     </div>
                                 )}
                                 <button 
@@ -318,25 +255,45 @@ const Alerts = () => {
                             </div>
                         </div>
 
-                        {/* Search bar */}
                         {alerts.length > 0 && (
                             <div className="bg-gray-800 rounded-xl border border-gray-700 p-4 mb-6 shadow-lg">
-                                <div className="relative">
-                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <FaSearch className="text-gray-500" />
+                                <div className="flex flex-col md:flex-row gap-4">
+                                    <div className="relative flex-1">
+                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                            <FaSearch className="text-gray-500" />
+                                        </div>
+                                        <input
+                                            type="text"
+                                            placeholder="Search alerts by camera..."
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                            className="w-full bg-gray-700 border border-gray-600 rounded-lg py-2 pl-10 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        />
                                     </div>
-                                    <input
-                                        type="text"
-                                        placeholder="Search alerts by camera..."
-                                        value={searchQuery}
-                                        onChange={(e) => setSearchQuery(e.target.value)}
-                                        className="w-full bg-gray-700 border border-gray-600 rounded-lg py-2 pl-10 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    />
+                                    
+                                    <div className="relative">
+                                        <div className="flex items-center">
+                                            <FaFilter className="text-gray-500 mr-2" />
+                                            <select
+                                                value={statusFilter}
+                                                onChange={(e) => setStatusFilter(e.target.value)}
+                                                className="bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none pr-8"
+                                            >
+                                                <option value="all">All Alerts</option>
+                                                <option value="active">Active Only</option>
+                                                <option value="pending">Pending Only</option>
+                                            </select>
+                                            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-400">
+                                                <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                                                    <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                                                </svg>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         )}
 
-                        {/* Error state */}
                         {error && (
                             <div className="bg-red-500/20 text-red-400 p-4 rounded-lg flex items-center mb-6">
                                 <FaExclamationTriangle className="mr-2" />
@@ -344,20 +301,21 @@ const Alerts = () => {
                             </div>
                         )}
 
-                        {/* Loading state */}
                         {loading && alerts.length === 0 ? (
                             <div className="bg-gray-800 rounded-xl border border-gray-700 p-10 flex items-center justify-center">
                                 <FaSync className="animate-spin text-2xl text-blue-500 mr-3" />
-                                <p>Loading active alerts...</p>
+                                <p>Loading alerts...</p>
                             </div>
                         ) : filteredAlerts.length === 0 ? (
                             <div className="bg-gray-800 rounded-xl border border-gray-700 p-10 text-center">
                                 <FaBell className="mx-auto text-4xl text-gray-600 mb-3" />
-                                <h3 className="text-xl font-semibold text-white mb-2">No Active Alerts</h3>
+                                <h3 className="text-xl font-semibold text-white mb-2">No Alerts Found</h3>
                                 <p className="text-gray-400">
                                     {searchQuery 
                                         ? 'No alerts match your search criteria' 
-                                        : 'No active fire alerts detected at this time'}
+                                        : statusFilter !== 'all' 
+                                            ? `No ${statusFilter} alerts at this time` 
+                                            : 'No active or pending fire alerts detected'}
                                 </p>
                             </div>
                         ) : (
@@ -365,9 +323,11 @@ const Alerts = () => {
                                 {filteredAlerts.map((alert) => (
                                     <div 
                                         key={alert.id} 
-                                        className="bg-gray-800 rounded-lg border border-red-500/50 overflow-hidden shadow-lg hover:shadow-xl transition-shadow"
+                                        className={`bg-gray-800 rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-shadow
+                                            ${alert.status === 'active' 
+                                                ? 'border border-red-500/50' 
+                                                : 'border border-yellow-500/50'}`}
                                     >
-                                        {/* Alert image */}
                                         <div className="relative aspect-video bg-gray-900">
                                             {alert.image_url ? (
                                                 <img
@@ -381,19 +341,19 @@ const Alerts = () => {
                                                 </div>
                                             )}
                                             
-                                            {/* Alert status badge */}
-                                            <div className="absolute top-2 right-2 px-2 py-1 rounded-md text-xs font-medium bg-red-600 text-white animate-pulse">
-                                                ACTIVE ALERT
+                                            <div className={`absolute top-2 right-2 px-2 py-1 rounded-md text-xs font-medium text-white
+                                                ${alert.status === 'active' 
+                                                    ? 'bg-red-600 animate-pulse' 
+                                                    : 'bg-yellow-600'}`}>
+                                                {alert.status === 'active' ? 'ACTIVE ALERT' : 'PENDING REVIEW'}
                                             </div>
                                             
-                                            {/* Confidence score */}
                                             <div className="absolute bottom-2 left-2 px-2 py-1 bg-black/70 text-white text-xs rounded-md">
                                                 Confidence: {alert.confidence.toFixed(1)}%
                                             </div>
                                         </div>
                                         
                                         <div className="p-4">
-                                            {/* Camera name and timestamp */}
                                             <div className="mb-3">
                                                 <h3 className="font-semibold text-lg text-white">{alert.camera_name}</h3>
                                                 <div className="flex items-center text-gray-400 text-sm mt-1">
@@ -405,7 +365,6 @@ const Alerts = () => {
                                                 </div>
                                             </div>
                                             
-                                            {/* Date and time */}
                                             <div className="flex text-sm text-gray-400 mb-4">
                                                 <div className="flex items-center mr-3">
                                                     <FaCalendarAlt className="mr-1" />
@@ -417,22 +376,35 @@ const Alerts = () => {
                                                 </div>
                                             </div>
                                             
-                                            {/* Action buttons */}
                                             <div className="flex gap-2">
                                                 <button
                                                     onClick={() => handleResolve(alert.id)}
                                                     className="flex-1 bg-green-600 hover:bg-green-700 flex items-center justify-center px-3 py-2 text-white rounded-lg transition-colors"
+                                                    disabled={loading}
                                                 >
                                                     <FaCheck className="mr-2" />
                                                     Resolve
                                                 </button>
-                                                <button
-                                                    onClick={() => confirmDelete(alert)}
-                                                    className="flex-1 bg-red-600 hover:bg-red-700 flex items-center justify-center px-3 py-2 text-white rounded-lg transition-colors"
-                                                >
-                                                    <FaTrash className="mr-2" />
-                                                    Delete
-                                                </button>
+                                                
+                                                {alert.status === 'active' ? (
+                                                    <button
+                                                        onClick={() => handlePending(alert.id)}
+                                                        className="flex-1 bg-yellow-600 hover:bg-yellow-700 flex items-center justify-center px-3 py-2 text-white rounded-lg transition-colors"
+                                                        disabled={loading}
+                                                    >
+                                                        <FaExclamationTriangle className="mr-2" />
+                                                        Pending
+                                                    </button>
+                                                ) : (
+                                                    <button
+                                                        onClick={() => handlePending(alert.id)}
+                                                        className="flex-1 bg-blue-600 hover:bg-blue-700 flex items-center justify-center px-3 py-2 text-white rounded-lg transition-colors"
+                                                        disabled={loading}
+                                                    >
+                                                        <FaSync className="mr-2" />
+                                                        Re-check
+                                                    </button>
+                                                )}
                                             </div>
                                         </div>
                                     </div>
@@ -442,44 +414,6 @@ const Alerts = () => {
                     </div>
                 </div>
             </div>
-            
-            {/* Delete Confirmation Modal */}
-            {showDeleteModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
-                    <div className="bg-gray-800 rounded-xl border border-gray-700 p-6 max-w-md w-full">
-                        <h3 className="text-xl font-bold text-white mb-4 flex items-center">
-                            <FaTrash className="text-red-500 mr-2" />
-                            Confirm Deletion
-                        </h3>
-                        <p className="text-gray-300 mb-6">
-                            Are you sure you want to delete this active fire alert from <span className="text-white font-medium">{alertToDelete?.camera_name}</span>? 
-                            <span className="block mt-2 text-red-400 font-medium">
-                                Warning: This will remove the alert without resolving it.
-                            </span>
-                        </p>
-                        <div className="flex gap-3 justify-end">
-                            <button 
-                                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
-                                onClick={() => setShowDeleteModal(false)}
-                            >
-                                Cancel
-                            </button>
-                            <button 
-                                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors flex items-center"
-                                onClick={handleDelete}
-                                disabled={loading}
-                            >
-                                {loading ? (
-                                    <FaSync className="animate-spin mr-2" />
-                                ) : (
-                                    <FaTrash className="mr-2" />
-                                )}
-                                Delete
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 };
