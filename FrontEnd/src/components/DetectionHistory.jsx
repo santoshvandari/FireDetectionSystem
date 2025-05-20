@@ -11,28 +11,28 @@ import Sidebar from './Sidebar';
 import AlertAPI from '../api/alerts';
 
 // Sample detection logs data
-const SAMPLE_LOGS = [
-    {
-        id: 1,
-        timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(), // 30 mins ago
-        camera_name: 'Server Room',
-        camera_id: 2,
-        location: 'Building A, Floor 2',
-        confidence: 89.7,
-        status: 'resolved',
-        image_url: 'https://via.placeholder.com/800x600/FF4444/FFFFFF?text=FIRE+DETECTED'
-    },
-    {
-        id: 2,
-        timestamp: new Date(Date.now() - 1000 * 60 * 120).toISOString(), // 2 hours ago
-        camera_name: 'Warehouse East',
-        camera_id: 4,
-        location: 'Storage Facility',
-        confidence: 95.2,
-        status: 'resolved',
-        image_url: 'https://via.placeholder.com/800x600/FF6644/FFFFFF?text=FIRE+DETECTED'
-    }
-];
+// const SAMPLE_LOGS = [
+//     {
+//         id: 1,
+//         timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(), // 30 mins ago
+//         camera_name: 'Server Room',
+//         camera_id: 2,
+//         location: 'Building A, Floor 2',
+//         confidence: 89.7,
+//         status: 'resolved',
+//         image_url: 'https://via.placeholder.com/800x600/FF4444/FFFFFF?text=FIRE+DETECTED'
+//     },
+//     {
+//         id: 2,
+//         timestamp: new Date(Date.now() - 1000 * 60 * 120).toISOString(), // 2 hours ago
+//         camera_name: 'Warehouse East',
+//         camera_id: 4,
+//         location: 'Storage Facility',
+//         confidence: 95.2,
+//         status: 'resolved',
+//         image_url: 'https://via.placeholder.com/800x600/FF6644/FFFFFF?text=FIRE+DETECTED'
+//     }
+// ];
 
 const DetectionHistory = () => {
     const [username, setUsername] = useState('Santosh');
@@ -105,6 +105,10 @@ const DetectionHistory = () => {
         try {
             // Get alerts from the API
             const response = await AlertAPI.getAlerts();
+
+            if (response.status !== 200) {
+                throw new Error('Failed to fetch logs');
+            }
             
             // Transform the API data to match the expected format
             const transformedLogs = response.data.map(alert => ({
@@ -200,6 +204,10 @@ const DetectionHistory = () => {
         try {
             setLoading(true);
             const response = await AlertAPI.getAlerts();
+
+            if (response.status !== 200) {
+                throw new Error('Failed to fetch logs for export');
+            }
             
             const allLogs = response.data.map(alert => ({
                 ID: alert.id,
@@ -671,7 +679,7 @@ const DetectionHistory = () => {
                                         <span>
                                             Showing <span className="font-medium text-white">{logs.length}</span> of{' '}
                                             <span className="font-medium text-white">
-                                                {SAMPLE_LOGS.filter(log => 
+                                                {logs.filter(log => 
                                                     (selectedCamera === 'all' || log.camera_name === selectedCamera) &&
                                                     (selectedStatus === 'all' || log.status.toLowerCase() === selectedStatus.toLowerCase()) &&
                                                     (!searchQuery || log.camera_name.toLowerCase().includes(searchQuery.toLowerCase()) || 
