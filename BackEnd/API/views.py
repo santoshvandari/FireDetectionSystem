@@ -6,6 +6,8 @@ from rest_framework.permissions import IsAuthenticated
 from API.models import Camera, FireDetectedAlert
 from django.shortcuts import get_object_or_404
 from django.db.models import Q
+import psutil
+from API.utils import get_system_status
 
 
 class HelloWorld(APIView):
@@ -23,7 +25,6 @@ class HelloWorld(APIView):
 
 # List all registered Cameras and Register a New Cameras
 class CameraList(APIView):
-    permission_classes = [IsAuthenticated]
     def get(self, request):
         cameras = Camera.objects.all()
         serializer = CameraSerializer(cameras, many=True)
@@ -39,7 +40,6 @@ class CameraList(APIView):
     
 # Get Camera Details, Start Monitoring Camera, Stop  Monitoring Camera
 class CameraDetail(APIView):
-    permission_classes = [IsAuthenticated]
     def put(self, request, id):
         camera = get_object_or_404(Camera, id=id)
         serializer = CameraSerializer(camera, data=request.data, partial=True)
@@ -55,13 +55,11 @@ class CameraDetail(APIView):
 
 # Start Detection
 class StartDetection(APIView):
-    permission_classes = [IsAuthenticated]
     def post(self, request, id):
         # Simulate or trigger YOLO detection here
         return Response({f"message": f"Detection started for camera {id}"}, status=status.HTTP_200_OK)
 # Stop Detection
 class StopDetection(APIView):
-    permission_classes = [IsAuthenticated]
     def post(self, request, id):
         # Simulate or trigger YOLO detection stop here
         camera = get_object_or_404(Camera, id=id)
@@ -95,6 +93,25 @@ class AlertDetectionHistory(APIView):
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+
+# System Information 
+class SystemInfo(APIView):
+    def get(self,request):
+        # Get system information
+        cpu_usage = psutil.cpu_percent(interval=1)
+        memory_usage = psutil.virtual_memory().percent
+        disk_usage = psutil.disk_usage('/').percent
+        system_status = get_system_status(cpu_usage, memory_usage, disk_usage)
+        response = {
+            "cpu_usage": cpu_usage,
+            "memory_usage": memory_usage,
+            "disk_usage": disk_usage,
+            "system_status": system_status
+        }
+        return Response(response, status=status.HTTP_200_OK)
+
 
 
 # # Get Event Details

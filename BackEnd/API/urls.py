@@ -20,5 +20,9 @@ urlpatterns = [
     # Fire Detection Event
     path("alerts/",views.AlertDetectionHistory.as_view(), name="event_list"),
     path("alerts/active/",views.Alert.as_view(), name="event_detail"),
+
+    # System Information
+    path("system/",views.SystemInfo.as_view(), name="system_info"),
+    
     
 ]
