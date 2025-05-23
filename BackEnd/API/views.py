@@ -6,6 +6,13 @@ from rest_framework.permissions import IsAuthenticated
 from API.models import Camera, FireDetectedAlert
 from django.shortcuts import get_object_or_404
 from django.db.models import Q
+import psutil
+from API.utils import get_system_status
+import logging
+import os
+
+
+logger = logging.getLogger(__name__)
 
 
 class HelloWorld(APIView):
@@ -23,7 +30,6 @@ class HelloWorld(APIView):
 
 # List all registered Cameras and Register a New Cameras
 class CameraList(APIView):
-    permission_classes = [IsAuthenticated]
     def get(self, request):
         cameras = Camera.objects.all()
         serializer = CameraSerializer(cameras, many=True)
@@ -39,7 +45,6 @@ class CameraList(APIView):
     
 # Get Camera Details, Start Monitoring Camera, Stop  Monitoring Camera
 class CameraDetail(APIView):
-    permission_classes = [IsAuthenticated]
     def put(self, request, id):
         camera = get_object_or_404(Camera, id=id)
         serializer = CameraSerializer(camera, data=request.data, partial=True)
@@ -55,13 +60,11 @@ class CameraDetail(APIView):
 
 # Start Detection
 class StartDetection(APIView):
-    permission_classes = [IsAuthenticated]
     def post(self, request, id):
         # Simulate or trigger YOLO detection here
         return Response({f"message": f"Detection started for camera {id}"}, status=status.HTTP_200_OK)
 # Stop Detection
 class StopDetection(APIView):
-    permission_classes = [IsAuthenticated]
     def post(self, request, id):
         # Simulate or trigger YOLO detection stop here
         camera = get_object_or_404(Camera, id=id)
@@ -95,6 +98,37 @@ class AlertDetectionHistory(APIView):
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+
+# System Information 
+class SystemInfo(APIView):
+    def get(self, request):
+        try:
+            cpu = psutil.cpu_percent(interval=None)
+            memory = psutil.virtual_memory().percent
+            disk = psutil.disk_usage('/').percent
+            uptime = int(psutil.boot_time())
+            load_avg = os.getloadavg() if hasattr(os, "getloadavg") else None
+
+            system_status = get_system_status(cpu, memory, disk)
+
+            system_info = {
+                "cpu_usage": cpu,
+                "memory_usage": memory,
+                "disk_usage": disk,
+                "uptime_seconds": uptime,
+                "load_average": load_avg,
+                "system_status": system_status,
+            }
+            return Response(system_info, status=status.HTTP_200_OK)
+        except Exception as e:
+            logger.error(f"System info retrieval failed: {e}")
+            return Response(
+                {"error": "Failed to retrieve system information"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+        
 
 
 # # Get Event Details
