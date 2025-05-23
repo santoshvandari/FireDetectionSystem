@@ -8,6 +8,11 @@ from django.shortcuts import get_object_or_404
 from django.db.models import Q
 import psutil
 from API.utils import get_system_status
+import logging
+import os
+
+
+logger = logging.getLogger(__name__)
 
 
 class HelloWorld(APIView):
@@ -98,20 +103,32 @@ class AlertDetectionHistory(APIView):
 
 # System Information 
 class SystemInfo(APIView):
-    def get(self,request):
-        # Get system information
-        cpu_usage = psutil.cpu_percent(interval=1)
-        memory_usage = psutil.virtual_memory().percent
-        disk_usage = psutil.disk_usage('/').percent
-        system_status = get_system_status(cpu_usage, memory_usage, disk_usage)
-        response = {
-            "cpu_usage": cpu_usage,
-            "memory_usage": memory_usage,
-            "disk_usage": disk_usage,
-            "system_status": system_status
-        }
-        return Response(response, status=status.HTTP_200_OK)
+    def get(self, request):
+        try:
+            cpu = psutil.cpu_percent(interval=None)
+            memory = psutil.virtual_memory().percent
+            disk = psutil.disk_usage('/').percent
+            uptime = int(psutil.boot_time())
+            load_avg = os.getloadavg() if hasattr(os, "getloadavg") else None
 
+            system_status = get_system_status(cpu, memory, disk)
+
+            system_info = {
+                "cpu_usage": cpu,
+                "memory_usage": memory,
+                "disk_usage": disk,
+                "uptime_seconds": uptime,
+                "load_average": load_avg,
+                "system_status": system_status,
+            }
+            return Response(system_info, status=status.HTTP_200_OK)
+        except Exception as e:
+            logger.error(f"System info retrieval failed: {e}")
+            return Response(
+                {"error": "Failed to retrieve system information"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+        
 
 
 # # Get Event Details
