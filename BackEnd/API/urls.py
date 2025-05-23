@@ -22,7 +22,7 @@ urlpatterns = [
     path("alerts/active/",views.Alert.as_view(), name="event_detail"),
 
     # System Information
-    path("system/",views.SystemInfo.as_view(), name="system_info"),
-    
+    path("systeminfo/",views.SystemInfo.as_view(), name="system_info"),
+
     
 ]
