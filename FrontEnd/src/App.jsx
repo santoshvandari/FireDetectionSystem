@@ -15,7 +15,7 @@ function App(){
   const [showAlertModal, setShowAlertModal] = useState(false);
   const [alertData, setAlertData] = useState(null);
   const { lastAlert } = useFireAlertSocket();
-  // const navigate = useNavigate();
+  
 
   useEffect(() => {
       if (lastAlert && lastAlert.type === 'alert_message') {
