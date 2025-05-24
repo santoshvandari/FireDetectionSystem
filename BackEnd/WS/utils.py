@@ -1,7 +1,7 @@
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 
-def send_fire_alert(message):
+def send_fire_alert(message,camera_info):
     """
     Send a fire alert message to the WebSocket group.
     """
@@ -11,5 +11,10 @@ def send_fire_alert(message):
         {
             "type": "alert_message",
             "message": message,
+            "camera_id":camera_info.id,
+            "camera_name":camera_info.name,
+            "camera_ip": camera_info.camera_ip,
+            "location": camera_info.location
+            
         }
     )

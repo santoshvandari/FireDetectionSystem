@@ -43,6 +43,9 @@ class FireAlertConsumer(AsyncWebsocketConsumer):
         await self.send(text_data=json.dumps({
             'camera_id': camera_id,
             'type': 'alert_message',
-            'message': message
+            'message': message,
+            'camera_name': event.get('camera_name', 'Unknown Camera'),
+            'camera_ip': event.get('camera_ip', 'Unknown IP'),
+            'location': event.get('location', 'Unknown Location')
         }))
     
