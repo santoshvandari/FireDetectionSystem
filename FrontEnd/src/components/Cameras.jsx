@@ -8,8 +8,6 @@ import { useNavigate } from 'react-router-dom';
 import Header from './Header';
 import Sidebar from './Sidebar';
 import CameraAPI from '../api/camera';
-import { useFireAlertSocket } from '../websocket/websocket';
-import FireAlertModal from './FireAlertModal';
 
 export default function Cameras() {
     const [username, setUsername] = useState('Admin');
@@ -26,39 +24,12 @@ export default function Cameras() {
     const [showEditModal, setShowEditModal] = useState(false);
     const [cameraToDelete, setCameraToDelete] = useState(null);
     const [editFormData, setEditFormData] = useState({ name: '', camera_ip: '', location: '' });
-    
-    // WebSocket alert handling
-    const [showAlertModal, setShowAlertModal] = useState(false);
-    const [alertData, setAlertData] = useState(null);
-    
-    // Use the WebSocket hook
-    const { lastAlert, connected } = useFireAlertSocket();
-    
-    // Handle incoming alerts from WebSocket
-    useEffect(() => {
-        if (lastAlert && lastAlert.type === 'alert_message') {
-            console.log('Received alert:', lastAlert);
-            setAlertData(lastAlert);
-            setShowAlertModal(true);
-            
-            // Play alert sound if available
-            // const alertSound = new Audio('/alert.mp3');
-            // alertSound.play().catch(err => console.log('Failed to play alert sound', err));
-        }
-    }, [lastAlert]);
-    
-    // Handle alert modal close
-    const handleAlertClose = () => {
-        setShowAlertModal(false);
-    };
 
     useEffect(() => {
         const token = localStorage.getItem('token') || sessionStorage.getItem('token');
         if (!token) {
             navigate('/');
         }
-        
-        // Check screen width on component mount and adjust sidebar
         const checkScreenSize = () => {
             if (window.innerWidth < 1024) {
                 setSidebarOpen(false);
@@ -66,10 +37,8 @@ export default function Cameras() {
                 setSidebarOpen(true);
             }
         };
-        
         checkScreenSize();
         window.addEventListener('resize', checkScreenSize);
-        
         return () => window.removeEventListener('resize', checkScreenSize);
     }, [navigate]);
 
@@ -262,7 +231,7 @@ export default function Cameras() {
     return (
         <div className="flex h-screen w-screen bg-gray-900 text-gray-100 overflow-hidden">
             {/* WebSocket status indicator */}
-            <div className={`fixed top-4 right-4 z-50 flex items-center rounded-full px-3 py-1 ${
+            {/* <div className={`fixed top-4 right-4 z-50 flex items-center rounded-full px-3 py-1 ${
                 connected ? 'bg-green-500/20' : 'bg-red-500/20'
             }`}>
                 <div className={`h-2 w-2 rounded-full mr-2 ${
@@ -271,14 +240,14 @@ export default function Cameras() {
                 <span className="text-xs">
                     {connected ? 'Alert System Connected' : 'Alert System Disconnected'}
                 </span>
-            </div>
+            </div> */}
 
             {/* Fire Alert Modal */}
-            <FireAlertModal 
+            {/* <FireAlertModal 
                 visible={showAlertModal}
                 data={alertData}
                 onClose={handleAlertClose}
-            />
+            /> */}
             
             {/* Overlay for mobile when sidebar is open */}
             {sidebarOpen && (
@@ -422,13 +391,13 @@ export default function Cameras() {
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                 {cameras.map((cam) => (
                                     <div key={cam.id} className={`bg-gray-800 rounded-lg border ${
-                                        alertData && alertData.camera_id === cam.id 
-                                            ? 'border-red-500 shadow-lg shadow-red-500/20 animate-pulse' 
+                                        cam.status === 'fire'
+                                            ? 'border-red-500 shadow-lg shadow-red-500/20 animate-pulse'
                                             : 'border-gray-700'
                                     } overflow-hidden shadow-lg hover:shadow-xl transition-shadow`}>
                                         <div className="relative aspect-video bg-gray-900">
                                             {/* Alert indicator when this camera has an active alert */}
-                                            {alertData && alertData.camera_id === cam.id && (
+                                            {cam.status === 'fire' && (
                                                 <div className="absolute inset-0 flex items-center justify-center bg-red-900/30 z-10">
                                                     <div className="bg-red-500/20 backdrop-blur-sm p-3 rounded-lg animate-pulse">
                                                         <FaFire className="text-red-500 text-4xl" />
@@ -454,20 +423,20 @@ export default function Cameras() {
                                             <div className="flex justify-between items-center mb-2">
                                                 <h3 className="font-semibold text-lg text-white">{cam.name}</h3>
                                                 <span className={`text-xs px-2 py-0.5 rounded-full ${
-                                                    alertData && alertData.camera_id === cam.id
+                                                    cam.status === 'fire'
                                                         ? 'bg-red-500/20 text-red-400'
-                                                        : cam.status === 'online' 
-                                                            ? 'bg-green-500/20 text-green-400' 
+                                                        : cam.status === 'online'
+                                                            ? 'bg-green-500/20 text-green-400'
                                                             : cam.status === 'error'
                                                                 ? 'bg-red-500/20 text-red-400'
                                                                 : 'bg-gray-500/20 text-gray-400'
                                                 }`}>
-                                                    {alertData && alertData.camera_id === cam.id 
-                                                        ? 'Fire Detected' 
-                                                        : cam.status === 'online' 
-                                                            ? 'Online' 
-                                                            : cam.status === 'error' 
-                                                                ? 'Error' 
+                                                    {cam.status === 'fire'
+                                                        ? 'Fire Detected'
+                                                        : cam.status === 'online'
+                                                            ? 'Online'
+                                                            : cam.status === 'error'
+                                                                ? 'Error'
                                                                 : 'Offline'}
                                                 </span>
                                             </div>
