@@ -8,15 +8,8 @@ import { useNavigate } from 'react-router-dom';
 import Header from './Header';
 import Sidebar from './Sidebar';
 import CameraAPI from '../api/camera';
-
-// Sample camera data to display
-// const SAMPLE_CAMERAS = [
-//     { id: 1, name: 'Main Entrance', stream_url: 'rtsp://192.168.1.101:554/stream1', status: 'offline' },
-//     { id: 2, name: 'Server Room', stream_url: 'rtsp://192.168.1.102:554/stream1', status: 'online' },
-//     { id: 3, name: 'Storage Area', stream_url: 'http://invalid.url.com/stream', status: 'error' },
-//     { id: 4, name: 'Parking Lot', stream_url: 'rtsp://10.0.0.15:554/main', status: 'offline' },
-//     { id: 5, name: 'Production Floor', stream_url: 'http://10.0.0.20:8080/video', status: 'online' }
-// ];
+import { useFireAlertSocket } from '../websocket/websocket';
+import FireAlertModal from './FireAlertModal';
 
 export default function Cameras() {
     const [username, setUsername] = useState('Admin');
@@ -24,7 +17,7 @@ export default function Cameras() {
     const navigate = useNavigate();
 
     const [cameras, setCameras] = useState([]);
-    const [newCamera, setNewCamera] = useState({ name: '', camera_ip: '',location:'' });
+    const [newCamera, setNewCamera] = useState({ name: '', camera_ip: '', location: '' });
     const [editingCamera, setEditingCamera] = useState(null);
     const [error, setError] = useState(null);
     const [modalError, setModalError] = useState(null);
@@ -33,6 +26,31 @@ export default function Cameras() {
     const [showEditModal, setShowEditModal] = useState(false);
     const [cameraToDelete, setCameraToDelete] = useState(null);
     const [editFormData, setEditFormData] = useState({ name: '', camera_ip: '', location: '' });
+    
+    // WebSocket alert handling
+    const [showAlertModal, setShowAlertModal] = useState(false);
+    const [alertData, setAlertData] = useState(null);
+    
+    // Use the WebSocket hook
+    const { lastAlert, connected } = useFireAlertSocket();
+    
+    // Handle incoming alerts from WebSocket
+    useEffect(() => {
+        if (lastAlert && lastAlert.type === 'alert_message') {
+            console.log('Received alert:', lastAlert);
+            setAlertData(lastAlert);
+            setShowAlertModal(true);
+            
+            // Play alert sound if available
+            // const alertSound = new Audio('/alert.mp3');
+            // alertSound.play().catch(err => console.log('Failed to play alert sound', err));
+        }
+    }, [lastAlert]);
+    
+    // Handle alert modal close
+    const handleAlertClose = () => {
+        setShowAlertModal(false);
+    };
 
     useEffect(() => {
         const token = localStorage.getItem('token') || sessionStorage.getItem('token');
@@ -58,6 +76,7 @@ export default function Cameras() {
     const toggleSidebar = () => {
         setSidebarOpen(!sidebarOpen);
     };
+    
     const loadCameras = async () => {
         try {
             setIsLoading(true);
@@ -129,7 +148,6 @@ export default function Cameras() {
         }
     };
 
-   
     const handleUpdateCamera = async () => {
         // Validation
         if (!editFormData.name || !editFormData.camera_ip || !editFormData.location) {
@@ -162,8 +180,6 @@ export default function Cameras() {
             setModalError('Failed to update camera');
             setIsLoading(false);
         }
-
-        
     };
 
     // Open delete confirmation modal
@@ -174,6 +190,7 @@ export default function Cameras() {
             setShowDeleteModal(true);
         }
     };
+    
     const handleDelete = async () => {
         if (!cameraToDelete) return;
         
@@ -244,6 +261,25 @@ export default function Cameras() {
 
     return (
         <div className="flex h-screen w-screen bg-gray-900 text-gray-100 overflow-hidden">
+            {/* WebSocket status indicator */}
+            <div className={`fixed top-4 right-4 z-50 flex items-center rounded-full px-3 py-1 ${
+                connected ? 'bg-green-500/20' : 'bg-red-500/20'
+            }`}>
+                <div className={`h-2 w-2 rounded-full mr-2 ${
+                    connected ? 'bg-green-500 animate-pulse' : 'bg-red-500'
+                }`}></div>
+                <span className="text-xs">
+                    {connected ? 'Alert System Connected' : 'Alert System Disconnected'}
+                </span>
+            </div>
+
+            {/* Fire Alert Modal */}
+            <FireAlertModal 
+                visible={showAlertModal}
+                data={alertData}
+                onClose={handleAlertClose}
+            />
+            
             {/* Overlay for mobile when sidebar is open */}
             {sidebarOpen && (
                 <div 
@@ -385,16 +421,29 @@ export default function Cameras() {
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                 {cameras.map((cam) => (
-                                    <div key={cam.id} className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden shadow-lg hover:shadow-xl transition-shadow">
+                                    <div key={cam.id} className={`bg-gray-800 rounded-lg border ${
+                                        alertData && alertData.camera_id === cam.id 
+                                            ? 'border-red-500 shadow-lg shadow-red-500/20 animate-pulse' 
+                                            : 'border-gray-700'
+                                    } overflow-hidden shadow-lg hover:shadow-xl transition-shadow`}>
                                         <div className="relative aspect-video bg-gray-900">
-                                            {/* Use CameraStreamView component instead of the placeholder */}
+                                            {/* Alert indicator when this camera has an active alert */}
+                                            {alertData && alertData.camera_id === cam.id && (
+                                                <div className="absolute inset-0 flex items-center justify-center bg-red-900/30 z-10">
+                                                    <div className="bg-red-500/20 backdrop-blur-sm p-3 rounded-lg animate-pulse">
+                                                        <FaFire className="text-red-500 text-4xl" />
+                                                    </div>
+                                                </div>
+                                            )}
+                                            
+                                            {/* Use CameraStreamView component */}
                                             <CameraStreamView camera={cam} />
                                             
                                             <div className="absolute top-2 left-2 px-2 py-1 bg-gray-900/70 text-white text-xs rounded-md">
                                                 Camera #{cam.id}
                                             </div>
                                             
-                                            {/* Show recording indicator - we'll assume it's recording if we can see the stream */}
+                                            {/* Show recording indicator */}
                                             <div className="absolute bottom-2 right-2 flex items-center space-x-1">
                                                 <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse"></div>
                                                 <span className="text-xs text-gray-300">Recording</span>
@@ -405,15 +454,24 @@ export default function Cameras() {
                                             <div className="flex justify-between items-center mb-2">
                                                 <h3 className="font-semibold text-lg text-white">{cam.name}</h3>
                                                 <span className={`text-xs px-2 py-0.5 rounded-full ${
-                                                    cam.status === 'online' 
-                                                        ? 'bg-green-500/20 text-green-400' 
-                                                        : cam.status === 'error'
-                                                            ? 'bg-red-500/20 text-red-400'
-                                                            : 'bg-gray-500/20 text-gray-400'
+                                                    alertData && alertData.camera_id === cam.id
+                                                        ? 'bg-red-500/20 text-red-400'
+                                                        : cam.status === 'online' 
+                                                            ? 'bg-green-500/20 text-green-400' 
+                                                            : cam.status === 'error'
+                                                                ? 'bg-red-500/20 text-red-400'
+                                                                : 'bg-gray-500/20 text-gray-400'
                                                 }`}>
-                                                    {cam.status === 'online' ? 'Online' : cam.status === 'error' ? 'Error' : 'Offline'}
+                                                    {alertData && alertData.camera_id === cam.id 
+                                                        ? 'Fire Detected' 
+                                                        : cam.status === 'online' 
+                                                            ? 'Online' 
+                                                            : cam.status === 'error' 
+                                                                ? 'Error' 
+                                                                : 'Offline'}
                                                 </span>
                                             </div>
+                                            <p className="text-gray-400 text-sm mb-1">Location: {cam.location}</p>
                                             <p className="text-gray-400 text-sm mb-4 truncate">{cam.camera_ip}</p>
                                             
                                             <div className="flex gap-2">

@@ -10,6 +10,8 @@ import psutil
 from API.utils import get_system_status
 import logging
 import os
+from WS.utils import send_fire_alert
+
 
 
 logger = logging.getLogger(__name__)
@@ -58,17 +60,17 @@ class CameraDetail(APIView):
         camera.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-# Start Detection
-class StartDetection(APIView):
-    def post(self, request, id):
-        # Simulate or trigger YOLO detection here
-        return Response({f"message": f"Detection started for camera {id}"}, status=status.HTTP_200_OK)
-# Stop Detection
-class StopDetection(APIView):
-    def post(self, request, id):
-        # Simulate or trigger YOLO detection stop here
-        camera = get_object_or_404(Camera, id=id)
-        return Response({"message": f"Detection stopped for camera {camera.name}(IP: {camera.camera_ip})"}, status=status.HTTP_200_OK)
+# # Start Detection
+# class StartDetection(APIView):
+#     def post(self, request, id):
+#         # Simulate or trigger YOLO detection here
+#         return Response({f"message": f"Detection started for camera {id}"}, status=status.HTTP_200_OK)
+# # Stop Detection
+# class StopDetection(APIView):
+#     def post(self, request, id):
+#         # Simulate or trigger YOLO detection stop here
+#         camera = get_object_or_404(Camera, id=id)
+#         return Response({"message": f"Detection stopped for camera {camera.name}(IP: {camera.camera_ip})"}, status=status.HTTP_200_OK)
     
 # List all Alert and Get DetectionHistory
 class Alert(APIView):
@@ -89,7 +91,17 @@ class AlertDetectionHistory(APIView):
             if not serializer.is_valid():
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
             serializer.save()
+            message = "Fire detected!"
+            # Send notification
+            camera_info = Camera.objects.get(id=serializer.data['camera_id'])
+            print(camera_info)
+            if camera_info:
+                message = f"Fire detected in camera {camera_info.name} (IP: {camera_info.camera_ip})"
+            else:
+                logger.warning("Camera information not found for the alert.")
+            send_fire_alert(message, camera_info)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
+
         def put(self, request):
             id = request.data.pop('id', None)
             event = get_object_or_404(FireDetectedAlert, id=id)
