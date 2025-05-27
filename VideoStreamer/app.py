@@ -42,43 +42,34 @@ camera_alert_states = {}
 # This function sends WebSocket message and saves snapshot to API
 def send_fire_alert(fire_data, snapshot_path, camera_ip):
     try:
-        
-        # Second, send snapshot and data to Django API
-        # if os.path.exists(snapshot_path):
-        if True:
+        # Send snapshot and data to Django API
+        if os.path.exists(snapshot_path):
             django_api_endpoint = "http://localhost:8000/api/alerts/"
-            print(fire_data)
-            # Prepare the data payload matching your Django model
-            # data = {
-            #     'camera_ip': camera_ip,  # Now using the passed camera_ip parameter
-            #     # 'confidence': fire_data.get('confidence', 0.8),
-            #     "confidence":0.8,
-            #     'status': 'active'  # Default status as per your model
-            # }
-
-            data = {
-                'camera_ip':'http://127.0.0.1:5000/kitchen',
-                'confidence': fire_data.get('confidence', 0.8),
-            }
-            print(f"Sending fire alert with data: {data}")
+            print(f"Sending fire alert with data: {fire_data}")
             
-            # Prepare the file payload
-            # with open(snapshot_path, 'rb') as img_file:
-                # files = {
-                #     'detected_frame': (
-                #         os.path.basename(snapshot_path),  # filename
-                #         img_file,                         # file object
-                #         'image/jpeg'                      # content type
-                #     )
-                # }
-            if True:
-                # files="null"
+            # Prepare the data payload matching your Django model
+            data = {
+                'camera_ip': camera_ip,  # Use the actual camera_ip parameter
+                'confidence': fire_data.get('confidence', 0.8),
+                'status': 'active'
+            }
+            
+            # Prepare the file payload for detected_frame
+            with open(snapshot_path, 'rb') as img_file:
+                files = {
+                    'detected_frame': (
+                        os.path.basename(snapshot_path),  # filename
+                        img_file,                         # file object
+                        'image/jpeg'                      # content type
+                    )
+                }
+                
                 try:
                     # Send POST request to Django API
                     api_response = requests.post(
                         django_api_endpoint, 
                         data=data, 
-                        # files=files, 
+                        files=files, 
                         timeout=10
                     )
                     
@@ -114,7 +105,7 @@ def annotate_frame(frame, camera_location):
 
     return annotated_frame, results
 
-def generate_frames(video_path, camera_location, camera_id=1):
+def generate_frames(video_path, camera_location, camera_ip, camera_id=1):
     global frame_count, camera_alert_states
     cap = cv2.VideoCapture(video_path)
     frame_count = 0
@@ -168,7 +159,6 @@ def generate_frames(video_path, camera_location, camera_id=1):
                             not alert_state['snapshot_taken'] and 
                             (current_time - alert_state['last_alert_time'] > alert_state['alert_cooldown'])):
                             
-                            print(f"Fire Detected in camera {camera_id}! Confidence: {confidence:.2f}")
                            
                             # Generate timestamp for unique ID
                             timestamp = datetime.now()
@@ -176,7 +166,15 @@ def generate_frames(video_path, camera_location, camera_id=1):
                            
                             # Save snapshot
                             snapshot_filename = os.path.join(snapshot_dir, f"fire_{camera_id}_{unique_id}.jpg")
-                            cv2.imwrite(snapshot_filename, frame)
+                            
+                            # Actually save the frame as an image
+                            success = cv2.imwrite(snapshot_filename, frame)
+                            print(f"success: {success}")
+                            if success:
+                                print(f"Snapshot saved successfully: {snapshot_filename}")
+                            else:
+                                print(f"Failed to save snapshot: {snapshot_filename}")
+                            
                             alert_state['snapshot_taken'] = True
                             alert_state['last_alert_time'] = current_time
                             
@@ -246,26 +244,29 @@ def serve_snapshot(filename):
 # Camera streams
 @app.route('/kitchen')
 def kitchen_camera():
-    video_path = "./Videos/video1.mp4"  # Replace with fire footage
+    video_path = "./Videos/video1.mp4"
     camera_location = "Kitchen"
-    camera_ip = "/kitchen"
-    return Response(generate_frames(video_path, camera_location, camera_ip), 
+    camera_ip = "http://127.0.0.1:5000/kitchen"  # This matches Django camera_ip
+    camera_id = 1
+    return Response(generate_frames(video_path, camera_location, camera_ip, camera_id), 
                    mimetype='multipart/x-mixed-replace; boundary=frame')
 
 @app.route('/livingroom')
 def livingroom_camera():
-    video_path = "./Videos/video2.mp4"  # Replace with another video
+    video_path = "./Videos/video2.mp4"
     camera_location = "Living Room"
-    camera_ip = "/livingroom"
-    return Response(generate_frames(video_path, camera_location, camera_ip), 
+    camera_ip = "http://127.0.0.1:5000/livingroom"  # This matches Django camera_ip
+    camera_id = 2
+    return Response(generate_frames(video_path, camera_location, camera_ip, camera_id), 
                    mimetype='multipart/x-mixed-replace; boundary=frame')
 
 @app.route('/storage')
 def storage_camera():
-    video_path = "./Videos/video3.mp4"  # Replace with another video
+    video_path = "./Videos/video3.mp4"
     camera_location = "Storage Room"
-    camera_id = "/storage"
-    return Response(generate_frames(video_path, camera_location, camera_id), 
+    camera_ip = "http://127.0.0.1:5000/storage"  # This matches Django camera_ip
+    camera_id = 3
+    return Response(generate_frames(video_path, camera_location, camera_ip, camera_id), 
                    mimetype='multipart/x-mixed-replace; boundary=frame')
 
 # Health check endpoint
@@ -277,6 +278,15 @@ def health_check():
         "snapshot_dir": snapshot_dir,
         "active_cameras": len(camera_alert_states)
     })
+
+# Add this check at the start of your app
+if not os.path.exists(snapshot_dir):
+    os.makedirs(snapshot_dir, exist_ok=True)
+    print(f"Created snapshot directory: {snapshot_dir}")
+
+# Check if directory is writable
+if not os.access(snapshot_dir, os.W_OK):
+    print(f"Warning: Snapshot directory is not writable: {snapshot_dir}")
 
 if __name__ == '__main__':
     print("Starting Fire Detection System...")

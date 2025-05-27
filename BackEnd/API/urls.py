@@ -24,5 +24,8 @@ urlpatterns = [
     # System Information
     path("systeminfo/",views.SystemInfo.as_view(), name="system_info"),
 
+
+    # Image Download Endpoint
+    path("download/<str:filename>/", views.ImageDownload.as_view(), name="download_image"),
     
 ]
