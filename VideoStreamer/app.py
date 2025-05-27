@@ -9,6 +9,8 @@ import time
 import requests
 from flask_cors import CORS, cross_origin
 import json
+from flask import send_from_directory
+
 
 app = Flask(__name__)
 
@@ -110,7 +112,7 @@ def generate_frames(video_path, camera_location, camera_ip, camera_id=1):
     cap = cv2.VideoCapture(video_path)
     frame_count = 0
     
-    # Get video frame rate for normal playback speed
+    # Get video frame rate for normal playbook speed
     fps = cap.get(cv2.CAP_PROP_FPS)
     if fps <= 0:
         fps = 30  # Default to 30 fps if unable to get fps
@@ -159,21 +161,19 @@ def generate_frames(video_path, camera_location, camera_ip, camera_id=1):
                             not alert_state['snapshot_taken'] and 
                             (current_time - alert_state['last_alert_time'] > alert_state['alert_cooldown'])):
                             
-                           
                             # Generate timestamp for unique ID
                             timestamp = datetime.now()
                             unique_id = int(timestamp.timestamp() * 1e6)
-                           
-                            # Save snapshot
+                            # Save snapshot - Use annotated_frame instead of original frame
                             snapshot_filename = os.path.join(snapshot_dir, f"fire_{camera_id}_{unique_id}.jpg")
                             
-                            # Actually save the frame as an image
-                            success = cv2.imwrite(snapshot_filename, frame)
+                            # Save the annotated frame (with bounding boxes and predictions) instead of original
+                            success = cv2.imwrite(snapshot_filename, annotated_frame)
                             print(f"success: {success}")
                             if success:
-                                print(f"Snapshot saved successfully: {snapshot_filename}")
+                                print(f"Predicted snapshot saved successfully: {snapshot_filename}")
                             else:
-                                print(f"Failed to save snapshot: {snapshot_filename}")
+                                print(f"Failed to save predicted snapshot: {snapshot_filename}")
                             
                             alert_state['snapshot_taken'] = True
                             alert_state['last_alert_time'] = current_time
@@ -238,7 +238,6 @@ def index():
 # Serve snapshot images
 @app.route('/snapshots/<filename>')
 def serve_snapshot(filename):
-    from flask import send_from_directory
     return send_from_directory(snapshot_dir, filename)
 
 # Camera streams

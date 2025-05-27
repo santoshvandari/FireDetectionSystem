@@ -156,8 +156,8 @@ const DetectionHistory = () => {
     };
 
     const openPreviewModal = (imageUrl) => {
-        imageUrl = imageUrl.startsWith('http') ? imageUrl : `${API_BASE_URL}${imageUrl}`;
-        setPreviewImage(imageUrl);
+        const fullImageUrl = imageUrl.startsWith('http') ? imageUrl : `${API_BASE_URL}${imageUrl}`;
+        setPreviewImage(fullImageUrl);
         setShowPreviewModal(true);
     };
 
@@ -165,25 +165,75 @@ const DetectionHistory = () => {
         if (!imageUrl) return;
         
         try {
-            // Extract filename from URL
-            const filename = imageUrl.split('/').pop();
-            const downloadUrl = `${API_BASE_URL}api/download/${filename}/`;
+            // Ensure we have the full URL
+            const fullImageUrl = imageUrl.startsWith('http') ? imageUrl : `${API_BASE_URL}${imageUrl}`;
             
-            const response = await fetch(downloadUrl);
-            if (!response.ok) throw new Error('Download failed');
+            // Fetch the image
+            const response = await fetch(fullImageUrl, {
+                mode: 'cors',
+                headers: {
+                    'Accept': 'image/*'
+                }
+            });
             
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            // Get the image as blob
             const blob = await response.blob();
+            
+            // Create a temporary URL for the blob
             const url = window.URL.createObjectURL(blob);
+            
+            // Extract filename from the URL or create a default one
+            const filename = imageUrl.split('/').pop() || `fire-detection-${Date.now()}.jpg`;
+            
+            // Create a temporary link element and trigger download
             const link = document.createElement('a');
             link.href = url;
             link.download = filename;
+            link.style.display = 'none';
+            
+            // Append to body, click, and remove
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
+            
+            // Clean up the temporary URL
             window.URL.revokeObjectURL(url);
+            
+            console.log('Image downloaded successfully');
+            
         } catch (error) {
             console.error('Download failed:', error);
-            setError('Failed to download image. Please try again.');
+            
+            // Fallback: try to open image in new tab if direct download fails
+            try {
+                const fullImageUrl = imageUrl.startsWith('http') ? imageUrl : `${API_BASE_URL}${imageUrl}`;
+                const newWindow = window.open(fullImageUrl, '_blank');
+                
+                if (newWindow) {
+                    // Add a small delay then try to trigger download via the new window
+                    setTimeout(() => {
+                        try {
+                            const link = newWindow.document.createElement('a');
+                            link.href = fullImageUrl;
+                            link.download = imageUrl.split('/').pop() || `fire-detection-${Date.now()}.jpg`;
+                            newWindow.document.body.appendChild(link);
+                            link.click();
+                            newWindow.document.body.removeChild(link);
+                            newWindow.close();
+                        } catch (fallbackError) {
+                            console.log('Fallback download failed, image opened in new tab');
+                        }
+                    }, 1000);
+                } else {
+                    setError('Unable to download image. Please check your popup blocker settings.');
+                }
+            } catch (fallbackError) {
+                setError('Failed to download image. Please try right-clicking the image and selecting "Save image as..."');
+            }
         }
     };
 
