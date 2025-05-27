@@ -11,6 +11,7 @@ from API.utils import get_system_status
 import logging
 import os
 from WS.utils import send_fire_alert
+from django.conf import settings
 
 
 
@@ -87,13 +88,27 @@ class AlertDetectionHistory(APIView):
             return Response(serializer.data, status=status.HTTP_200_OK)
         
         def post(self, request):
-            serializer = AlertPostSerializer(data=request.data)
+            print("Received POST request for fire detection alert.")
+            data = request.data.copy()
+            print(f"Request data: {data}")
+            camera_ip = data.get('camera_ip', None)
+            if not camera_ip:
+                print("Camera IP is missing in the request data.")
+                return Response({"error": "Camera IP is required."}, status=status.HTTP_400_BAD_REQUEST)
+            try:
+                camera = Camera.objects.get(camera_ip=camera_ip)
+            except Camera.DoesNotExist:
+                logger.error(f"Camera with IP {camera_ip} not found.")
+                return Response({"error": "Camera not found."}, status=status.HTTP_404_NOT_FOUND)
+            data['camera_id'] = camera.id 
+            data.pop('camera_ip', None)  # Remove camera_ip from data if it exists
+            serializer = AlertPostSerializer(data=data)
             if not serializer.is_valid():
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
             serializer.save()
             message = "Fire detected!"
             # Send notification
-            camera_info = Camera.objects.get(id=serializer.data['camera_id'])
+            camera_info = camera
             print(camera_info)
             if camera_info:
                 message = f"Fire detected in camera {camera_info.name} (IP: {camera_info.camera_ip})"
@@ -140,7 +155,23 @@ class SystemInfo(APIView):
                 {"error": "Failed to retrieve system information"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+class ImageDownload(APIView):
+    def get(self, request,filename):
+        # file_path = os.path.join('media', 'fdetections', filename)
+        file_path = os.path.join(settings.MEDIA_ROOT, 'fdetections', filename)
+        print(f"File path: {file_path}")
+        if not os.path.exists(file_path):
+            return Response({"error": "File not found"}, status=status.HTTP_404_NOT_FOUND)
         
+        with open(file_path, 'rb') as file:
+            response = Response(file.read(), content_type='image/jpeg')
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+            return response
+
+
+
+
 
 
 # # Get Event Details

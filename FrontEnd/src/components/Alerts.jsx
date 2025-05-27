@@ -20,6 +20,7 @@ const Alerts = () => {
     const [error, setError] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('all'); // 'all', 'active', or 'pending'
+    const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/';
 
     useEffect(() => {
         const token = localStorage.getItem('token') || sessionStorage.getItem('token');
@@ -331,7 +332,7 @@ const Alerts = () => {
                                         <div className="relative aspect-video bg-gray-900">
                                             {alert.image_url ? (
                                                 <img
-                                                    src={alert.image_url}
+                                                    src={API_BASE_URL+alert.image_url}
                                                     alt={`Fire alert from ${alert.camera_name}`}
                                                     className="w-full h-full object-cover"
                                                 />
