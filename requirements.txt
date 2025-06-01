@@ -1,0 +1,48 @@
+# Core Dependencies
+ultralytics==8.0.196
+flask==2.3.3
+flask-cors==4.0.0
+opencv-python==4.8.1.78
+requests==2.31.0
+numpy==1.24.3
+Pillow==10.0.1
+
+# Python Environment
+python-dotenv==1.0.0
+
+# Video Processing
+imageio==2.31.3
+imageio-ffmpeg==0.4.9
+
+# Additional Utilities
+datetime
+threading
+time
+os
+sys
+
+# Development Dependencies (Optional)
+pytest==7.4.2
+black==23.7.0
+flake8==6.0.0
+pre-commit==3.4.0
+
+# Production Dependencies (Optional)
+gunicorn==21.2.0
+supervisor==4.2.5
+
+# Database (if Django backend is used)
+psycopg2-binary==2.9.7
+django==4.2.5
+djangorestframework==3.14.0
+django-cors-headers==4.2.0
+channels==4.0.0
+channels-redis==4.1.0
+
+# Frontend (if React is used)
+# Note: These are Node.js packages, not Python
+# Listed here for reference only
+# react==18.2.0
+# react-dom==18.2.0
+# axios==1.5.0
+# socket.io-client==4.7.2
