@@ -259,11 +259,11 @@ def livingroom_camera():
     return Response(generate_frames(video_path, camera_location, camera_ip, camera_id), 
                    mimetype='multipart/x-mixed-replace; boundary=frame')
 
-@app.route('/storage')
+@app.route('/test')
 def storage_camera():
     video_path = "./Videos/video3.mp4"
-    camera_location = "Storage Room"
-    camera_ip = "http://127.0.0.1:5000/storage"  # This matches Django camera_ip
+    camera_location = "test"
+    camera_ip = "http://127.0.0.1:5000/test"  # This matches Django camera_ip
     camera_id = 3
     return Response(generate_frames(video_path, camera_location, camera_ip, camera_id), 
                    mimetype='multipart/x-mixed-replace; boundary=frame')
