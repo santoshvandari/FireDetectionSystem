@@ -268,6 +268,16 @@ def storage_camera():
     return Response(generate_frames(video_path, camera_location, camera_ip, camera_id), 
                    mimetype='multipart/x-mixed-replace; boundary=frame')
 
+# @app.route('/xyz')
+# def storage_camera():
+#     video_path = "./Videos/video3.mp4"
+#     camera_location = "xyz"
+#     camera_ip = "http://127.0.0.1:5000/xyz"  # This matches Django camera_ip
+#     camera_id = 3
+#     return Response(generate_frames(video_path, camera_location, camera_ip, camera_id), 
+#                    mimetype='multipart/x-mixed-replace; boundary=frame')
+
+
 # Health check endpoint
 @app.route('/health')
 def health_check():

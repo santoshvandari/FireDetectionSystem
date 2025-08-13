@@ -10,7 +10,6 @@ import Cameras from "./components/Cameras";
 import Alerts from "./components/Alerts";
 import DetectionHistory from "./components/DetectionHistory";
 import FireAlertModal from './components/FireAlertModal';
-import Logo from './components/Logo';
 
 function App(){
   const [showAlertModal, setShowAlertModal] = useState(false);
@@ -32,9 +31,6 @@ function App(){
 
   return (
     <Router>
-      {/* Logo component can be added here if needed */}
-      <Logo/>
-      
       {/* Fire Alert Modal is always mounted */}
       <FireAlertModal
           visible={showAlertModal}
